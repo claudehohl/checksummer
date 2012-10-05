@@ -1,9 +1,11 @@
 checksummer
 ===========
 
-Be in control about your file's integrity
+Be in control about your file's integrity.
 
-Files on your new RAID-controller get corrupt? You want to move your data to an encrypted filesystem and want to be sure, that every file is saved correctly?
+Files on your new RAID-controller get corrupt?
+
+You want to move your data to an encrypted filesystem and want to be sure, that every file is saved correctly?
 
 checksummer.py creates a checksum of EVERY file. You can change the base path (i.e. your data has new mountpoint) and recheck again. checksummer.py reports differences.
 
@@ -37,12 +39,15 @@ Main menu
 ### Collecting files
 
 Just type in *cf* and [Enter], and checksummer will scan every file starting from the base path.
+
 Now you can search your files. But we don't have the size, yet.
 
 ### Collecting file stats
 
-Second step: Get the size and modification time of your files.
+Second step: Get the size and modification time of your files: *cs*.
+
 Now we can show all files, sorted by size: *r*
+
 Or by modification time: *m*
 
 ### Creating checksums
@@ -53,6 +58,7 @@ After that, duplicates can be listed.
 ### Checking checksums
 
 *rc* Reindex & check. You can do that from time to time…
+
 If you've moved your files on a different location, you can change the base path first, and then run *rc*.
 
 Search quickly
