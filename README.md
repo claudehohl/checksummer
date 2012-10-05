@@ -9,8 +9,7 @@ You want to move your data to an encrypted filesystem and want to be sure, that 
 
 checksummer.py creates a checksum of EVERY file. You can change the base path (i.e. your data has new mountpoint) and recheck again. checksummer.py reports differences.
 
-Bonus features
-==============
+## Bonus features
 
 ### Search files by filename
 
@@ -24,8 +23,7 @@ Since we save the checksum of every file, we can find out which files have the s
 
 Scroll through the history of your files. I've downloaded some RFC textfiles; they are dated 1986. Blew my mind, too.
 
-Usage
-=====
+## Usage
 
 Just provide the location where you want the sqlite3 database.
 It's a good habit to put that on the root of your filesystem as a hidden file, e.g. /mnt/Data/.checksummer.db
@@ -34,8 +32,7 @@ It's a good habit to put that on the root of your filesystem as a hidden file, e
 
 First run: Provide the base path; from which checksummer will scan files. You can change that anytime.
 
-Main menu
-=========
+## Main menu
 
 ### Collecting files
 
@@ -62,8 +59,7 @@ After that, duplicates can be listed.
 
 If you've moved your files on a different location, you can change the base path first, and then run *rc*.
 
-Search quickly
-==============
+## Search quickly
 
 Just append the search term:
 
