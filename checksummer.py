@@ -342,7 +342,7 @@ class Checksummer:
             checksum_sha256 = r[3]
 
             try:
-                print('checking checksum: (' + filesize + ') ' + filename)
+                print('(' + str(count) + ') checking checksum: ' + filename + ' (' + filesize + ')')
                 checksum = hash_file(self.basepath + filename)
 
                 if checksum == checksum_sha256:
