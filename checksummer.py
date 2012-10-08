@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2.6
 
 from __future__ import print_function
 import os, sys, subprocess
@@ -304,7 +304,7 @@ class Checksummer:
             filesize = byteformat(r[2])
 
             try:
-                print('(' + str(count) + ') making checksum: ' + filename + ' (' + filesize + ')')
+                print('(' + str(count) + ') making checksum: ' + self.basepath + filename + ' (' + filesize + ')')
                 checksum = hash_file(self.basepath + filename)
                 uc.execute("""UPDATE files SET checksum_sha256 = ? WHERE id = ?""", [checksum, id])
 
@@ -342,7 +342,7 @@ class Checksummer:
             checksum_sha256 = r[3]
 
             try:
-                print('(' + str(count) + ') checking checksum: ' + filename + ' (' + filesize + ')')
+                print('(' + str(count) + ') checking checksum: ' + self.basepath + filename + ' (' + filesize + ')')
                 checksum = hash_file(self.basepath + filename)
 
                 if checksum == checksum_sha256:
@@ -385,7 +385,7 @@ class Checksummer:
         for r in c.fetchall():
             filename = r[0].encode('utf-8')
             filesize = byteformat(r[1])
-            res.append(filesize + "\t" + filename)
+            res.append(filesize + "\t" + self.basepath + filename)
 
         pager("\n".join(res))
 
@@ -399,7 +399,7 @@ class Checksummer:
             filename = r[0].encode('utf-8')
             filesize = byteformat(r[1])
             date = dateformat(r[2])
-            res.append(date + "\t" + filesize + "\t" + filename)
+            res.append(date + "\t" + filesize + "\t" + self.basepath + filename)
 
         pager("\n".join(res))
 
