@@ -372,7 +372,7 @@ class Checksummer:
         for r in c.fetchall():
             filename = r[0].encode('utf-8')
             filesize = byteformat(r[1])
-            res.append(filesize + "\t" + filename)
+            res.append(filesize + "\t" + self.basepath + filename)
 
         pager("\n".join(res), autoquit)
 
@@ -428,7 +428,7 @@ class Checksummer:
         for r in c.fetchall():
             filename = r[0].encode('utf-8')
             filesize = byteformat(r[1])
-            res.append(filesize + "\t" + filename)
+            res.append(filesize + "\t" + self.basepath + filename)
 
         pager("\n".join(res))
 
@@ -446,7 +446,7 @@ class Checksummer:
         for r in c.fetchall():
             filename = r[0].encode('utf-8')
             filesize = byteformat(r[1])
-            res.append(filesize + "\t" + filename)
+            res.append(filesize + "\t" + self.basepath + filename)
 
         pager("\n".join(res))
 
