@@ -416,7 +416,7 @@ class Checksummer:
         for r in c.fetchall():
             filename = r[0].encode('utf-8')
             count = str(r[1])
-            res.append(count + "\t" + filename)
+            res.append(count + "\t" + self.basepath + filename)
 
         pager("\n".join(res))
 
