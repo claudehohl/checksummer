@@ -245,15 +245,19 @@ class Checksummer:
             filenames = [os.path.join(root, file) for file in files]
 
             for filename in filenames:
-                filename = filename.decode('utf-8')
-                filename = filename.replace(self.basepath, '')
-                filename = filename.replace("'", "\'")
-                filename = filename.replace('"', '\"')
-
                 try:
-                    c.execute("""INSERT INTO files(filename) VALUES(?)""", [filename])
+                    filename = filename.decode('utf-8')
+                    filename = filename.replace(self.basepath, '')
+                    filename = filename.replace("'", "\'")
+                    filename = filename.replace('"', '\"')
+
+                    try:
+                        c.execute("""INSERT INTO files(filename) VALUES(?)""", [filename])
+                    except:
+                        pass
+
                 except:
-                    pass
+                    print('malformed filename: ' + filename)
 
                 count += 1
                 if (count % 10000) == 0:
