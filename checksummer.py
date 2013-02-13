@@ -1,6 +1,5 @@
-#!/usr/bin/env python2.6
+#!/usr/bin/env python3
 
-from __future__ import print_function
 import os, sys, subprocess
 from os.path import join, getsize
 from datetime import datetime
@@ -73,7 +72,7 @@ class Checksummer:
     def main(self):
         if os.geteuid() != 0:
             print('You are not root. Collecting files is NOT recommended!')
-            raw_input('Press Enter to continue...')
+            input('Press Enter to continue...')
         files_check = self.check('files')
         filesize_check = self.check('filesize')
         checksum_check = self.check('checksum')
@@ -113,29 +112,29 @@ class Checksummer:
         print('[cb] change basepath')
         print('[q] exit')
         print('')
-        choice = raw_input('Select: ')
+        choice = input('Select: ')
 
         if choice == 'q':
             sys.exit()
 
         elif choice == 'cf':
             self.collect_files()
-            raw_input('Press Enter to continue...')
+            input('Press Enter to continue...')
             self.main()
 
         elif choice == 'cs':
             self.collect_filestats()
-            raw_input('Press Enter to continue...')
+            input('Press Enter to continue...')
             self.main()
 
         elif choice == 'mc':
             self.make_checksums()
-            raw_input('Press Enter to continue...')
+            input('Press Enter to continue...')
             self.main()
 
         elif choice == 'rc':
             self.reindex()
-            raw_input('Press Enter to continue...')
+            input('Press Enter to continue...')
             self.main()
 
         elif choice == 's':
@@ -367,7 +366,7 @@ class Checksummer:
 
     def search(self, searchterm = '', autoquit = False):
         if searchterm == '':
-            searchterm = raw_input('Enter searchterm: ')
+            searchterm = input('Enter searchterm: ')
 
         c = self.db.cursor()
         c.execute("""SELECT filename, filesize FROM files WHERE filename LIKE ? ORDER BY filesize DESC""", ['%' + searchterm.decode('utf-8') + '%'])
@@ -462,7 +461,7 @@ class Checksummer:
 
     def change_basepath(self):
         print('Choose base path')
-        basepath = raw_input('(enter full path, without trailing slash): ')
+        basepath = input('(enter full path, without trailing slash): ')
         if basepath != '':
             self.basepath = basepath
             self.set_option('basepath', basepath)
