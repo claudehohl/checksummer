@@ -242,7 +242,6 @@ class Checksummer:
 
             for filename in filenames:
                 try:
-                    filename = filename.decode('utf-8')
                     filename = filename.replace(self.basepath, '')
                     filename = filename.replace("'", "\'")
                     filename = filename.replace('"', '\"')
@@ -272,7 +271,7 @@ class Checksummer:
         count = len(allfiles)
         for r in allfiles:
             id = r[0]
-            filename = r[1].encode('utf-8')
+            filename = r[1]
 
             try:
                 stat = os.stat(self.basepath + filename)
@@ -300,7 +299,7 @@ class Checksummer:
         count = len(allfiles)
         for r in allfiles:
             id = r[0]
-            filename = r[1].encode('utf-8')
+            filename = r[1]
             filesize = byteformat(r[2])
 
             try:
@@ -337,7 +336,7 @@ class Checksummer:
         count = len(allfiles)
         for r in allfiles:
             id = r[0]
-            filename = r[1].encode('utf-8')
+            filename = r[1]
             filesize = byteformat(r[2])
             checksum_sha256 = r[3]
 
@@ -366,11 +365,11 @@ class Checksummer:
             searchterm = input('Enter searchterm: ')
 
         c = self.db.cursor()
-        c.execute("""SELECT filename, filesize FROM files WHERE filename LIKE ? ORDER BY filesize DESC""", ['%' + searchterm.decode('utf-8') + '%'])
+        c.execute("""SELECT filename, filesize FROM files WHERE filename LIKE ? ORDER BY filesize DESC""", ['%' + searchterm + '%'])
         res = []
 
         for r in c.fetchall():
-            filename = r[0].encode('utf-8')
+            filename = r[0]
             filesize = byteformat(r[1])
             res.append(filesize + "\t" + self.basepath + filename)
 
@@ -383,7 +382,7 @@ class Checksummer:
         res = []
 
         for r in c.fetchall():
-            filename = r[0].encode('utf-8')
+            filename = r[0]
             filesize = byteformat(r[1])
             res.append(filesize + "\t" + self.basepath + filename)
 
@@ -396,7 +395,7 @@ class Checksummer:
         res = []
 
         for r in c.fetchall():
-            filename = r[0].encode('utf-8')
+            filename = r[0]
             filesize = byteformat(r[1])
             date = dateformat(r[2])
             res.append(date + "\t" + filesize + "\t" + self.basepath + filename)
@@ -414,7 +413,7 @@ class Checksummer:
         res = []
 
         for r in c.fetchall():
-            filename = r[0].encode('utf-8')
+            filename = r[0]
             count = str(r[1])
             res.append(count + "\t" + self.basepath + filename)
 
@@ -426,9 +425,9 @@ class Checksummer:
         res = []
 
         for r in c.fetchall():
-            filename = r[0].encode('utf-8')
+            filename = r[0]
             filesize = byteformat(r[1])
-            res.append(filesize + "\t" + self.basepath + filename)
+            res.append(filesize + "\t" + self.basepath + str(filename))
 
         pager("\n".join(res))
 
@@ -444,7 +443,7 @@ class Checksummer:
         res = []
 
         for r in c.fetchall():
-            filename = r[0].encode('utf-8')
+            filename = r[0]
             filesize = byteformat(r[1])
             res.append(filesize + "\t" + self.basepath + filename)
 
