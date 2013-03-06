@@ -70,9 +70,6 @@ class Checksummer:
             self.change_basepath()
 
     def main(self):
-        if os.geteuid() != 0:
-            print('You are not root. Collecting files is NOT recommended!')
-            input('Press Enter to continue...')
         files_check = self.check('files')
         filesize_check = self.check('filesize')
         checksum_check = self.check('checksum')
@@ -502,5 +499,8 @@ searchterm = ' '.join(sys.argv[2:])
 if searchterm != '':
     c.search(searchterm, autoquit = True)
 else:
+    if os.geteuid() != 0:
+        print('You are not root. Collecting files is NOT recommended!')
+        input('Press Enter to continue...')
     c.main()
 
