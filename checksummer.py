@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import os, sys, subprocess
+import os, sys
 from os.path import join, getsize
 from datetime import datetime
 import hashlib
@@ -9,9 +9,6 @@ import sqlite3
 
 
 # utils
-
-def run(cmd):
-    return subprocess.check_output(cmd, shell = True)
 
 def pager(string, autoquit = False):
     if autoquit:
