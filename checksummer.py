@@ -17,14 +17,14 @@ def pager(string, autoquit = False):
         pipe = os.popen('less -X', 'w')
     try:
         pipe.write(str(string))
-    except:
+    except Exception:
         pass
     pipe.close()
 
 def byteformat(num):
     try:
         num = float(num)
-    except:
+    except Exception:
         num = float(0)
     for ext in ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']:
         if num < 1024.0:
@@ -34,7 +34,7 @@ def byteformat(num):
 def dateformat(num):
     try:
         num = int(num)
-    except:
+    except Exception:
         num = int(0)
     date = datetime.fromtimestamp(num).strftime('%Y-%m-%d %H:%M:%S')
     return date
@@ -46,7 +46,7 @@ def hash_file(filename):
             for chunk in iter(lambda: f.read(8192), b''):
                 sha.update(chunk)
         return sha.hexdigest()
-    except:
+    except Exception:
         raise
 
 
@@ -187,7 +187,7 @@ class Checksummer:
             o_name TEXT UNIQUE,
             o_value TEXT
             )""")
-        except:
+        except Exception:
             pass
 
     def check(self, subject):
@@ -245,10 +245,10 @@ class Checksummer:
 
                     try:
                         c.execute("""INSERT INTO files(filename) VALUES(?)""", [filename])
-                    except:
+                    except Exception:
                         pass
 
-                except:
+                except Exception:
                     print('malformed filename: ' + filename)
 
                 count += 1
@@ -276,7 +276,7 @@ class Checksummer:
                 mtime = stat.st_mtime
                 uc.execute("""UPDATE files SET filesize = ?, mtime = ?, file_found = 1 WHERE id = ?""", [filesize, mtime, id])
 
-            except:
+            except Exception:
                 # file not found
                 uc.execute("""UPDATE files SET file_found = 0 WHERE id = ?""", [id])
 
@@ -304,7 +304,7 @@ class Checksummer:
                 checksum = hash_file(self.basepath + filename)
                 uc.execute("""UPDATE files SET checksum_sha256 = ? WHERE id = ?""", [checksum, id])
 
-            except:
+            except Exception:
                 # file not found
                 uc.execute("""UPDATE files SET file_found = 0 WHERE id = ?""", [id])
 
@@ -347,7 +347,7 @@ class Checksummer:
                     print('checksum mismatch')
                     uc.execute("""UPDATE files SET checksum_ok = '0' WHERE id = ?""", [id])
 
-            except:
+            except Exception:
                 # file not found
                 uc.execute("""UPDATE files SET file_found = 0 WHERE id = ?""", [id])
 
@@ -463,7 +463,7 @@ class Checksummer:
         c = self.db.cursor()
         try:
             c.execute("""INSERT INTO options(o_name, o_value) VALUES(?, ?)""", [key, val])
-        except:
+        except Exception:
             c.execute("""UPDATE options SET o_value = ? WHERE o_name = ?""", [val, key])
         self.db.commit()
 
