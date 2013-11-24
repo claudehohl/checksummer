@@ -5,7 +5,7 @@ from os.path import join, getsize
 from datetime import datetime
 import hashlib
 import sqlite3
-
+import argparse
 
 
 # utils
@@ -480,20 +480,15 @@ class Checksummer:
 
 # run
 
-if len(sys.argv) >= 2 and sys.argv[1] != '':
-    database = sys.argv[1]
-else:
-    print('Usage:   ' + __file__ + ' sqlite3.db [search arguments]')
-    print('')
-    print('Example: ' + __file__ + ' myfiles.db')
-    print('')
-    sys.exit()
+parser = argparse.ArgumentParser()
+parser.add_argument('database', help='Path to sqlite3 database to be used')
+parser.add_argument('search', nargs='*', help='Argument to search for')
+args = parser.parse_args()
 
-c = Checksummer(database)
+c = Checksummer(args.database)
 
-searchterm = ' '.join(sys.argv[2:])
-if searchterm != '':
-    c.search(searchterm, autoquit = True)
+if args.search:
+    c.search(' '.join(args.search), autoquit = True)
 else:
     if os.geteuid() != 0:
         print('You are not root. Collecting files is NOT recommended!')
