@@ -15,6 +15,8 @@ import (
 )
 
 var insert = make(chan string)
+var commit = make(chan bool)
+var commitDone = make(chan bool)
 
 func walkFn(path string, info os.FileInfo, err error) error {
 	fmt.Printf("%s", path)
@@ -52,11 +54,19 @@ func insertWorker() {
 	}
 	defer db.Close()
 
+	tx, err := db.Begin()
+	stmt, err := tx.Prepare("INSERT INTO files(filename) VALUES(?)")
+	defer stmt.Close()
 	for {
-		filename := <-insert
-		_, err = db.Exec("INSERT INTO files(filename) VALUES(?)", filename)
-		if err != nil {
-			log.Fatal(err)
+		select {
+		case filename := <-insert:
+			_, err = stmt.Exec(filename)
+			if err != nil {
+				log.Fatal(err)
+			}
+		case <-commit:
+			tx.Commit()
+			commitDone <- true
 		}
 	}
 
@@ -69,6 +79,8 @@ func main() {
 	go insertWorker()
 	err := filepath.Walk(root, walkFn)
 	fmt.Printf("filepath.Walk() returned %v\n", err)
+	commit <- true
+	<-commitDone
 }
 
 func sqlite() {
