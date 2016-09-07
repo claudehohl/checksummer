@@ -7,13 +7,14 @@ import (
 	"flag"
 	"fmt"
 	"github.com/davecgh/go-spew/spew"
+	_ "github.com/mattn/go-sqlite3"
 	"io"
 	"log"
 	"os"
 	"path/filepath"
 )
 
-func visit(path string, f os.FileInfo, err error) error {
+func walkFn(path string, info os.FileInfo, err error) error {
 	fmt.Printf("%s", path)
 	file, err := os.Open(path)
 	if err != nil {
@@ -21,9 +22,9 @@ func visit(path string, f os.FileInfo, err error) error {
 	}
 	defer file.Close()
 
-	spew.Dump(f)
+	spew.Dump(info)
 
-	if f.IsDir() {
+	if info.IsDir() {
 		return nil
 	}
 	hasher := sha256.New()
@@ -40,11 +41,13 @@ func visit(path string, f os.FileInfo, err error) error {
 func main() {
 	flag.Parse()
 	root := flag.Arg(0)
-	err := filepath.Walk(root, visit)
+	initDB()
+	err := filepath.Walk(root, walkFn)
 	fmt.Printf("filepath.Walk() returned %v\n", err)
 }
 
 func sqlite() {
+	os.Remove("foo.db")
 	db, err := sql.Open("sqlite3", "foo.db")
 	if err != nil {
 		log.Fatal(err)
@@ -68,6 +71,38 @@ func sqlite() {
 	}
 
 	err = rows.Err()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+}
+
+func initDB() {
+	os.Remove("foo.db")
+	db, err := sql.Open("sqlite3", "foo.db")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	_, err = db.Exec(`CREATE TABLE files (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            filename TEXT UNIQUE,
+            checksum_sha256 TEXT,
+            filesize INTEGER,
+            mtime INTEGER,
+            file_found INTEGER,
+            checksum_ok INTEGER
+            )`)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	_, err = db.Exec(`CREATE TABLE options (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            o_name TEXT UNIQUE,
+            o_value TEXT
+            )`)
 	if err != nil {
 		log.Fatal(err)
 	}
