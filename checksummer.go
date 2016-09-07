@@ -1,14 +1,14 @@
 package main
 
 import (
-	"crypto/sha256"
+	//"crypto/sha256"
 	"database/sql"
-	"encoding/hex"
+	//"encoding/hex"
 	"flag"
 	"fmt"
 	"github.com/davecgh/go-spew/spew"
 	_ "github.com/mattn/go-sqlite3"
-	"io"
+	//"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -27,15 +27,33 @@ func walkFn(path string, info os.FileInfo, err error) error {
 	if info.IsDir() {
 		return nil
 	}
-	hasher := sha256.New()
-	_, err = io.Copy(hasher, file)
-	if err != nil {
-		log.Fatal("this", err)
-	}
 
-	fmt.Printf(" %v\n", hex.EncodeToString(hasher.Sum(nil)))
+	// hasher := sha256.New()
+	// _, err = io.Copy(hasher, file)
+	// if err != nil {
+	// 	log.Fatal("this", err)
+	// }
+
+	// hash := hex.EncodeToString(hasher.Sum(nil))
+	// fmt.Printf(" %v\n", hash)
+
+	insert(path)
 
 	return nil
+}
+
+func insert(filename string) {
+	db, err := sql.Open("sqlite3", "foo.db")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	_, err = db.Exec("INSERT INTO files(filename) VALUES(?)", filename)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 }
 
 func main() {
