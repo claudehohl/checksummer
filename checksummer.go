@@ -14,6 +14,8 @@ import (
 	"path/filepath"
 )
 
+var insert = make(chan string)
+
 func walkFn(path string, info os.FileInfo, err error) error {
 	fmt.Printf("%s", path)
 	file, err := os.Open(path)
@@ -37,21 +39,25 @@ func walkFn(path string, info os.FileInfo, err error) error {
 	// hash := hex.EncodeToString(hasher.Sum(nil))
 	// fmt.Printf(" %v\n", hash)
 
-	insert(path)
+	insert <- path
+	//insert(path)
 
 	return nil
 }
 
-func insert(filename string) {
+func insertWorker() {
 	db, err := sql.Open("sqlite3", "foo.db")
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer db.Close()
 
-	_, err = db.Exec("INSERT INTO files(filename) VALUES(?)", filename)
-	if err != nil {
-		log.Fatal(err)
+	for {
+		filename := <-insert
+		_, err = db.Exec("INSERT INTO files(filename) VALUES(?)", filename)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
 }
@@ -60,6 +66,7 @@ func main() {
 	flag.Parse()
 	root := flag.Arg(0)
 	initDB()
+	go insertWorker()
 	err := filepath.Walk(root, walkFn)
 	fmt.Printf("filepath.Walk() returned %v\n", err)
 }
