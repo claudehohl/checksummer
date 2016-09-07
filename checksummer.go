@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"flag"
 	"fmt"
+	"github.com/davecgh/go-spew/spew"
 	"io"
 	"log"
 	"os"
@@ -13,12 +14,14 @@ import (
 )
 
 func visit(path string, f os.FileInfo, err error) error {
-	fmt.Printf("Visited: %s\n", path)
+	fmt.Printf("%s", path)
 	file, err := os.Open(path)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer file.Close()
+
+	spew.Dump(f)
 
 	if f.IsDir() {
 		return nil
@@ -29,7 +32,7 @@ func visit(path string, f os.FileInfo, err error) error {
 		log.Fatal("this", err)
 	}
 
-	os.Stdout.WriteString(hex.EncodeToString(hasher.Sum(nil)))
+	fmt.Printf(" %v\n", hex.EncodeToString(hasher.Sum(nil)))
 
 	return nil
 }
