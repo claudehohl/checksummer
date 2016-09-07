@@ -22,7 +22,7 @@ func walkFn(path string, info os.FileInfo, err error) error {
 	fmt.Printf("%s", path)
 	file, err := os.Open(path)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(err)
 	}
 	defer file.Close()
 
