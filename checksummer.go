@@ -18,12 +18,12 @@ var insert = make(chan string)
 var commit = make(chan bool)
 var commitDone = make(chan bool)
 
+var gdb, err = sql.Open("sqlite3", "foo.db")
+
 func walkFn(path string, info os.FileInfo, err error) error {
 	fmt.Printf("%s", path)
 	file, err := os.Open(path)
-	if err != nil {
-		fmt.Println(err)
-	}
+	checkErr(err)
 	defer file.Close()
 
 	spew.Dump(info)
@@ -49,9 +49,7 @@ func walkFn(path string, info os.FileInfo, err error) error {
 
 func insertWorker() {
 	db, err := sql.Open("sqlite3", "foo.db")
-	if err != nil {
-		log.Fatal(err)
-	}
+	checkErr(err)
 	defer db.Close()
 
 	tx, err := db.Begin()
@@ -92,9 +90,7 @@ func sqlite() {
 	defer db.Close()
 
 	rows, err := db.Query("select id, filename from files")
-	if err != nil {
-		log.Fatal(err)
-	}
+	checkErr(err)
 
 	defer rows.Close()
 	for rows.Next() {
@@ -108,9 +104,7 @@ func sqlite() {
 	}
 
 	err = rows.Err()
-	if err != nil {
-		log.Fatal(err)
-	}
+	checkErr(err)
 
 }
 
@@ -131,17 +125,19 @@ func initDB() {
             file_found INTEGER,
             checksum_ok INTEGER
             )`)
-	if err != nil {
-		log.Fatal(err)
-	}
+	checkErr(err)
 
 	_, err = db.Exec(`CREATE TABLE options (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             o_name TEXT UNIQUE,
             o_value TEXT
             )`)
-	if err != nil {
-		log.Fatal(err)
-	}
+	checkErr(err)
 
+}
+
+func checkErr(err error) {
+	if err != nil {
+		panic(err)
+	}
 }
