@@ -13,12 +13,35 @@ import (
 	"path/filepath"
 )
 
+// channels
 var insert = make(chan string)
 var commit = make(chan bool)
 var commitDone = make(chan bool)
 
+// vars
 var db *sql.DB
 var err error
+
+func main() {
+	flag.Parse()
+	root := flag.Arg(0)
+
+	// initialize database
+	initDB()
+
+	// fire up insert worker
+	go insertWorker()
+
+	// walk through files
+	err := filepath.Walk(root, walkFn)
+	checkErr(err)
+
+	// commit afterwards
+	commit <- true
+
+	// exit when commit is done
+	<-commitDone
+}
 
 func getDB() *sql.DB {
 	if db == nil {
@@ -73,17 +96,6 @@ func insertWorker() {
 		}
 	}
 
-}
-
-func main() {
-	flag.Parse()
-	root := flag.Arg(0)
-	initDB()
-	go insertWorker()
-	err := filepath.Walk(root, walkFn)
-	fmt.Printf("filepath.Walk() returned %v\n", err)
-	commit <- true
-	<-commitDone
 }
 
 func sqlite() {
