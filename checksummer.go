@@ -9,7 +9,6 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	_ "github.com/mattn/go-sqlite3"
 	//"io"
-	"log"
 	"os"
 	"path/filepath"
 )
