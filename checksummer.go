@@ -6,7 +6,6 @@ import (
 	//"encoding/hex"
 	"flag"
 	"fmt"
-	"github.com/davecgh/go-spew/spew"
 	_ "github.com/mattn/go-sqlite3"
 	//"io"
 	"os"
@@ -53,12 +52,14 @@ func getDB() *sql.DB {
 }
 
 func fileInspector(path string, info os.FileInfo, err error) error {
-	fmt.Printf("%s", path)
+	fmt.Printf("%s\n", path)
 	file, err := os.Open(path)
-	checkErr(err)
+	if err != nil {
+		fmt.Printf("File not found: %s", path)
+	}
 	defer file.Close()
 
-	spew.Dump(info)
+	// spew.Dump(info)
 
 	if info.IsDir() {
 		return nil
@@ -72,24 +73,33 @@ func fileInspector(path string, info os.FileInfo, err error) error {
 	// fmt.Printf(" %v\n", hash)
 
 	insert <- path
-	//insert(path)
 
 	return nil
 }
 
 func insertWorker() {
 	db := getDB()
+	c := 0
 
 	//TODO: maintain insert-counter, commit every 1000 files
 
 	tx, err := db.Begin()
 	stmt, err := tx.Prepare("INSERT INTO files(filename) VALUES(?)")
-	defer stmt.Close()
+	defer tx.Commit()
+	// defer stmt.Close()
 	for {
 		select {
 		case filename := <-insert:
 			_, err = stmt.Exec(filename)
 			checkErr(err)
+			c++
+			fmt.Printf("insert filename: %v\n", filename)
+			fmt.Printf("insert counter: %v\n", c)
+			fmt.Println("")
+			if c%10 == 0 {
+				fmt.Println("would commit now.")
+				tx.Commit()
+			}
 		case <-commit:
 			tx.Commit()
 			commitDone <- true
