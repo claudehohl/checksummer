@@ -33,7 +33,7 @@ func main() {
 	go insertWorker()
 
 	// walk through files
-	err := filepath.Walk(root, walkFn)
+	err := filepath.Walk(root, fileInspector)
 	checkErr(err)
 
 	// commit afterwards
@@ -52,7 +52,7 @@ func getDB() *sql.DB {
 	return db
 }
 
-func walkFn(path string, info os.FileInfo, err error) error {
+func fileInspector(path string, info os.FileInfo, err error) error {
 	fmt.Printf("%s", path)
 	file, err := os.Open(path)
 	checkErr(err)
