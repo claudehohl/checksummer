@@ -18,7 +18,17 @@ var insert = make(chan string)
 var commit = make(chan bool)
 var commitDone = make(chan bool)
 
-var gdb, err = sql.Open("sqlite3", "foo.db")
+var db *sql.DB
+var err error
+
+func getDB() *sql.DB {
+	if db == nil {
+		db, err = sql.Open("sqlite3", "foo.db")
+		checkErr(err)
+	}
+
+	return db
+}
 
 func walkFn(path string, info os.FileInfo, err error) error {
 	fmt.Printf("%s", path)
@@ -48,9 +58,7 @@ func walkFn(path string, info os.FileInfo, err error) error {
 }
 
 func insertWorker() {
-	db, err := sql.Open("sqlite3", "foo.db")
-	checkErr(err)
-	defer db.Close()
+	db := getDB()
 
 	tx, err := db.Begin()
 	stmt, err := tx.Prepare("INSERT INTO files(filename) VALUES(?)")
@@ -83,11 +91,7 @@ func main() {
 
 func sqlite() {
 	os.Remove("foo.db")
-	db, err := sql.Open("sqlite3", "foo.db")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
+	db := getDB()
 
 	rows, err := db.Query("select id, filename from files")
 	checkErr(err)
@@ -110,11 +114,7 @@ func sqlite() {
 
 func initDB() {
 	os.Remove("foo.db")
-	db, err := sql.Open("sqlite3", "foo.db")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
+	db := getDB()
 
 	_, err = db.Exec(`CREATE TABLE files (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
