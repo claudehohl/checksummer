@@ -44,9 +44,7 @@ func walkFn(path string, info os.FileInfo, err error) error {
 
 	// hasher := sha256.New()
 	// _, err = io.Copy(hasher, file)
-	// if err != nil {
-	// 	log.Fatal("this", err)
-	// }
+	// checkErr(err)
 
 	// hash := hex.EncodeToString(hasher.Sum(nil))
 	// fmt.Printf(" %v\n", hash)
@@ -69,9 +67,7 @@ func insertWorker() {
 		select {
 		case filename := <-insert:
 			_, err = stmt.Exec(filename)
-			if err != nil {
-				log.Fatal(err)
-			}
+			checkErr(err)
 		case <-commit:
 			tx.Commit()
 			commitDone <- true
@@ -103,9 +99,7 @@ func sqlite() {
 		var id int
 		var filename string
 		err = rows.Scan(&id, &filename)
-		if err != nil {
-			log.Fatal(err)
-		}
+		checkErr(err)
 		fmt.Println(id, filename)
 	}
 
