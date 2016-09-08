@@ -60,6 +60,8 @@ func walkFn(path string, info os.FileInfo, err error) error {
 func insertWorker() {
 	db := getDB()
 
+	//TODO: maintain insert-counter, commit every 1000 files
+
 	tx, err := db.Begin()
 	stmt, err := tx.Prepare("INSERT INTO files(filename) VALUES(?)")
 	defer stmt.Close()
