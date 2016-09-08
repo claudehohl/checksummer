@@ -14,6 +14,7 @@ import (
 
 // channels
 var insert = make(chan string)
+var clear = make(chan bool)
 var commit = make(chan bool)
 var commitDone = make(chan bool)
 
@@ -72,21 +73,26 @@ func fileInspector(path string, info os.FileInfo, err error) error {
 	// hash := hex.EncodeToString(hasher.Sum(nil))
 	// fmt.Printf(" %v\n", hash)
 
+	// wait for clear
+	<-clear
+
 	insert <- path
 
 	return nil
 }
 
 func insertWorker() {
-	db := getDB()
 	c := 0
 
 	//TODO: maintain insert-counter, commit every 1000 files
 
 	tx, err := db.Begin()
+	checkErr(err)
 	stmt, err := tx.Prepare("INSERT INTO files(filename) VALUES(?)")
-	defer tx.Commit()
-	// defer stmt.Close()
+	checkErr(err)
+	defer stmt.Close()
+
+	clear <- true
 	for {
 		select {
 		case filename := <-insert:
@@ -99,7 +105,13 @@ func insertWorker() {
 			if c%10 == 0 {
 				fmt.Println("would commit now.")
 				tx.Commit()
+				tx, err = db.Begin()
+				checkErr(err)
+				stmt, err = tx.Prepare("INSERT INTO files(filename) VALUES(?)")
+				checkErr(err)
+				defer stmt.Close()
 			}
+			clear <- true
 		case <-commit:
 			tx.Commit()
 			commitDone <- true
