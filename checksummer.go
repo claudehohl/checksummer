@@ -6,7 +6,7 @@ import (
 	//"encoding/hex"
 	"flag"
 	"fmt"
-	_ "github.com/mattn/go-sqlite3"
+	"github.com/mxk/go-sqlite/sqlite3"
 	//"io"
 	"errors"
 	"os"
@@ -19,9 +19,9 @@ var clear = make(chan bool)
 var commit = make(chan bool)
 var commitDone = make(chan bool)
 
-// DB wraps sql.DB
-type DB struct {
-	*sql.DB
+// Conn wraps sql.DB
+type Conn struct {
+	*sqlite3.Conn
 }
 
 // Tx wraps sql.Tx
@@ -63,26 +63,26 @@ func main() {
 }
 
 // Open returns a DB reference for a data source.
-func Open(dataSourceName string) (*DB, error) {
-	db, err := sql.Open("sqlite3", dataSourceName)
+func Open(dataSourceName string) (*Conn, error) {
+	c, err := sqlite3.Open(dataSourceName)
 	if err != nil {
 		return nil, err
 	}
-	return &DB{db}, nil
+	return &Conn{c}, nil
 }
 
-// Begin starts an returns a new transaction.
-func (db *DB) Begin() (*Tx, error) {
-	tx, err := db.DB.Begin()
+// Begin starts a new transaction.
+func (c *Conn) Begin() error {
+	err := c.Conn.Begin()
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return &Tx{tx}, nil
+	return nil
 }
 
 // Init initializes the database
-func (db *DB) Init() error {
-	_, err := db.Exec(`CREATE TABLE files (
+func (c *Conn) Init() error {
+	err := c.Exec(`CREATE TABLE files (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             filename TEXT UNIQUE,
             checksum_sha256 TEXT,
@@ -95,7 +95,7 @@ func (db *DB) Init() error {
 		return err
 	}
 
-	_, err = db.Exec(`CREATE TABLE options (
+	err = c.Exec(`CREATE TABLE options (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             o_name TEXT UNIQUE,
             o_value TEXT
@@ -104,11 +104,15 @@ func (db *DB) Init() error {
 		return err
 	}
 
+	// tuning
+	err = c.Exec("PRAGMA synchronous=OFF")
+	err = c.Exec("PRAGMA journal_size_limit=-1")
+
 	return nil
 }
 
 // InsertFilename inserts a filename
-func (tx *Tx) InsertFilename(f *File) error {
+func (c *Conn) InsertFilename(f *File, stmt *sqlite3.Stmt) error {
 	// Validate the input.
 	if f == nil {
 		return errors.New("file required")
@@ -117,8 +121,18 @@ func (tx *Tx) InsertFilename(f *File) error {
 	}
 
 	// Perform the actual insert and return any errors.
-	_, err := tx.Exec(`INSERT INTO files(filename) VALUES(?)`, f.Name)
+	// err := c.Exec(`INSERT INTO files(filename) VALUES(?)`, f.Name)
+	err := stmt.Exec(f.Name)
 	return err
+
+	// time.Sleep(1000 * time.Nanosecond)
+	// return nil
+}
+
+// PrepareInsert inserts a filename
+func (c *Conn) PrepareInsert() (*sqlite3.Stmt, error) {
+	stmt, err := c.Prepare(`INSERT INTO files(filename) VALUES(?)`)
+	return stmt, err
 }
 
 func fileInspector(path string, info os.FileInfo, err error) error {
@@ -149,38 +163,40 @@ func fileInspector(path string, info os.FileInfo, err error) error {
 	return nil
 }
 
-func insertWorker(db *DB) {
-	c := 0
+func insertWorker(c *Conn) {
+	i := 0
 
 	// TODO: make tx a type and assign methods to it
 
 	// db, err := Open("foo.db")
 	// checkErr(err)
 
-	tx, err := db.Begin()
+	err := c.Begin()
 	checkErr(err)
+
+	stmt, err := c.PrepareInsert()
 
 	clear <- true
 	for {
 		select {
 		case filename := <-insert:
-			err := tx.InsertFilename(&File{Name: filename})
+			err := c.InsertFilename(&File{Name: filename}, stmt)
 			checkErr(err)
 			// fmt.Printf("insert filename: %v\n", filename)
-			// fmt.Printf("insert counter: %v\n", c)
+			// fmt.Printf("insert counter: %v\n", i)
 			// fmt.Println("")
-			c++
-			if c%10000 == 0 {
-				fmt.Println(c)
-				tx.Commit()
-				tx, err = db.Begin()
+			i++
+			if i%10000 == 0 {
+				fmt.Println(i)
+				c.Commit()
+				err = c.Begin()
 				checkErr(err)
 			}
 
 			clear <- true
 
 		case <-commit:
-			tx.Commit()
+			c.Commit()
 			commitDone <- true
 		}
 	}
