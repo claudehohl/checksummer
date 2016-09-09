@@ -52,6 +52,9 @@ func main() {
 	err = filepath.Walk(root, fileInspector)
 	checkErr(err)
 
+	// wait for clear
+	<-clear
+
 	// final commit
 	commit <- true
 
@@ -114,12 +117,11 @@ func (tx *Tx) InsertFilename(f *File) error {
 	}
 
 	// Perform the actual insert and return any errors.
-	_, err := tx.Exec(`INSERT INTO files(filename) VALUES(?)`)
+	_, err := tx.Exec(`INSERT INTO files(filename) VALUES(?)`, f.Name)
 	return err
 }
 
 func fileInspector(path string, info os.FileInfo, err error) error {
-	fmt.Printf("%s\n", path)
 	file, err := os.Open(path)
 	if err != nil {
 		fmt.Printf("File not found: %s", path)
@@ -162,14 +164,14 @@ func insertWorker(db *DB) {
 	for {
 		select {
 		case filename := <-insert:
-			err := tx.InsertFilename(&File{Name: "autoexec.bat"})
+			err := tx.InsertFilename(&File{Name: filename})
 			checkErr(err)
+			// fmt.Printf("insert filename: %v\n", filename)
+			// fmt.Printf("insert counter: %v\n", c)
+			// fmt.Println("")
 			c++
-			fmt.Printf("insert filename: %v\n", filename)
-			fmt.Printf("insert counter: %v\n", c)
-			fmt.Println("")
-			if c%10 == 0 {
-				fmt.Println("would commit now.")
+			if c%10000 == 0 {
+				fmt.Println(c)
 				tx.Commit()
 				tx, err = db.Begin()
 				checkErr(err)
