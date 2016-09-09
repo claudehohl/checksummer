@@ -37,13 +37,16 @@ type File struct {
 func main() {
 	flag.Parse()
 	root := flag.Arg(0)
+	if root == "" {
+		panic("please provide rootpath!")
+	}
 
 	// initialize database
 	db, err := Open("foo.db")
 	db.Init()
 
 	// fire up insert worker
-	go insertWorker()
+	go insertWorker(db)
 
 	// walk through files
 	err = filepath.Walk(root, fileInspector)
@@ -144,7 +147,7 @@ func fileInspector(path string, info os.FileInfo, err error) error {
 	return nil
 }
 
-func insertWorker() {
+func insertWorker(db *DB) {
 	c := 0
 
 	// TODO: make tx a type and assign methods to it
