@@ -8,6 +8,7 @@ import (
 	"fmt"
 	_ "github.com/mattn/go-sqlite3"
 	//"io"
+	"errors"
 	"os"
 	"path/filepath"
 )
@@ -18,38 +19,100 @@ var clear = make(chan bool)
 var commit = make(chan bool)
 var commitDone = make(chan bool)
 
-// vars
-var db *sql.DB
-var err error
+// DB wraps sql.DB
+type DB struct {
+	*sql.DB
+}
+
+// Tx wraps sql.Tx
+type Tx struct {
+	*sql.Tx
+}
+
+// File is the struct for a file holding attributes
+type File struct {
+	Name string
+}
 
 func main() {
 	flag.Parse()
 	root := flag.Arg(0)
 
 	// initialize database
-	initDB()
+	db, err := Open("foo.db")
+	db.Init()
 
 	// fire up insert worker
 	go insertWorker()
 
 	// walk through files
-	err := filepath.Walk(root, fileInspector)
+	err = filepath.Walk(root, fileInspector)
 	checkErr(err)
 
-	// commit afterwards
+	// final commit
 	commit <- true
 
 	// exit when commit is done
 	<-commitDone
 }
 
-func getDB() *sql.DB {
-	if db == nil {
-		db, err = sql.Open("sqlite3", "foo.db")
-		checkErr(err)
+// Open returns a DB reference for a data source.
+func Open(dataSourceName string) (*DB, error) {
+	db, err := sql.Open("sqlite3", dataSourceName)
+	if err != nil {
+		return nil, err
+	}
+	return &DB{db}, nil
+}
+
+// Begin starts an returns a new transaction.
+func (db *DB) Begin() (*Tx, error) {
+	tx, err := db.DB.Begin()
+	if err != nil {
+		return nil, err
+	}
+	return &Tx{tx}, nil
+}
+
+// Init initializes the database
+func (db *DB) Init() error {
+	_, err := db.Exec(`CREATE TABLE files (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            filename TEXT UNIQUE,
+            checksum_sha256 TEXT,
+            filesize INTEGER,
+            mtime INTEGER,
+            file_found INTEGER,
+            checksum_ok INTEGER
+            )`)
+	if err != nil {
+		return err
 	}
 
-	return db
+	_, err = db.Exec(`CREATE TABLE options (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            o_name TEXT UNIQUE,
+            o_value TEXT
+            )`)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// InsertFilename inserts a filename
+func (tx *Tx) InsertFilename(f *File) error {
+	// Validate the input.
+	if f == nil {
+		return errors.New("file required")
+	} else if f.Name == "" {
+		return errors.New("name required")
+	}
+
+	// Perform the actual insert and return any errors.
+	_, err := tx.Exec(`INSERT INTO files(filename) VALUES(?)`)
+	return err
 }
 
 func fileInspector(path string, info os.FileInfo, err error) error {
@@ -84,19 +147,19 @@ func fileInspector(path string, info os.FileInfo, err error) error {
 func insertWorker() {
 	c := 0
 
-	//TODO: maintain insert-counter, commit every 1000 files
+	// TODO: make tx a type and assign methods to it
+
+	// db, err := Open("foo.db")
+	// checkErr(err)
 
 	tx, err := db.Begin()
 	checkErr(err)
-	stmt, err := tx.Prepare("INSERT INTO files(filename) VALUES(?)")
-	checkErr(err)
-	defer stmt.Close()
 
 	clear <- true
 	for {
 		select {
 		case filename := <-insert:
-			_, err = stmt.Exec(filename)
+			err := tx.InsertFilename(&File{Name: "autoexec.bat"})
 			checkErr(err)
 			c++
 			fmt.Printf("insert filename: %v\n", filename)
@@ -107,61 +170,15 @@ func insertWorker() {
 				tx.Commit()
 				tx, err = db.Begin()
 				checkErr(err)
-				stmt, err = tx.Prepare("INSERT INTO files(filename) VALUES(?)")
-				checkErr(err)
-				defer stmt.Close()
 			}
+
 			clear <- true
+
 		case <-commit:
 			tx.Commit()
 			commitDone <- true
 		}
 	}
-
-}
-
-func sqlite() {
-	os.Remove("foo.db")
-	db := getDB()
-
-	rows, err := db.Query("select id, filename from files")
-	checkErr(err)
-
-	defer rows.Close()
-	for rows.Next() {
-		var id int
-		var filename string
-		err = rows.Scan(&id, &filename)
-		checkErr(err)
-		fmt.Println(id, filename)
-	}
-
-	err = rows.Err()
-	checkErr(err)
-
-}
-
-func initDB() {
-	os.Remove("foo.db")
-	db := getDB()
-
-	_, err = db.Exec(`CREATE TABLE files (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            filename TEXT UNIQUE,
-            checksum_sha256 TEXT,
-            filesize INTEGER,
-            mtime INTEGER,
-            file_found INTEGER,
-            checksum_ok INTEGER
-            )`)
-	checkErr(err)
-
-	_, err = db.Exec(`CREATE TABLE options (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            o_name TEXT UNIQUE,
-            o_value TEXT
-            )`)
-	checkErr(err)
 
 }
 
