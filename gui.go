@@ -1,45 +1,65 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
-	"github.com/jroimartin/gocui"
-	"log"
+	"os"
 	"path/filepath"
+	"strings"
 )
 
 // LaunchGUI starts the user interface
 func LaunchGUI(db *Conn) {
-	g := gocui.NewGui()
-	if err := g.Init(); err != nil {
-		log.Panicln(err)
+
+	clearScreen()
+
+	fmt.Println("")
+	fmt.Println("basepath is: ")
+	fmt.Println("total size: ")
+	fmt.Println("")
+	fmt.Println("=== Collecting ===")
+	fmt.Println("[cf] collect files")
+	fmt.Println("[cs] collect filestats")
+	fmt.Println("[mc] make checksums")
+	fmt.Println("[rc] reindex & check all files")
+	fmt.Println("")
+	fmt.Println("=== Stats ===")
+	fmt.Println("[s] search files")
+	fmt.Println("[r] rank by filesize")
+	fmt.Println("[m] recently modified files")
+	fmt.Println("[ld] list duplicate files")
+	fmt.Println("[d] show X deleted files")
+	fmt.Println("[pd] prune deleted files")
+	fmt.Println("[ch] show X changed files")
+	fmt.Println("[pc] prune changed files")
+	fmt.Println("")
+	fmt.Println("[cb] change basepath")
+	fmt.Println("[q] exit")
+	fmt.Println("")
+
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Print("Select: ")
+	choice, _ := reader.ReadString('\n')
+
+	choice = strings.Trim(choice, "\n")
+
+	if choice == "cf" {
+		CollectFiles(db)
 	}
-	defer g.Close()
 
-	g.SetLayout(func(g *gocui.Gui) error {
-		maxX, maxY := g.Size()
-		if v, err := g.SetView("hello", maxX/2-7, maxY/2, maxX/2+7, maxY/2+2); err != nil {
-			if err != gocui.ErrUnknownView {
-				return err
-			}
-			fmt.Fprintln(v, "Hello world!")
-		}
-		return nil
-	})
+}
 
-	err := g.SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone, func(g *gocui.Gui, v *gocui.View) error {
-		return gocui.ErrQuit
-	})
-	checkErr(err)
+func clearScreen() {
+	fmt.Print("\033[H\033[2J")
+}
 
-	if err := g.MainLoop(); err != nil && err != gocui.ErrQuit {
-		log.Panicln(err)
-	}
-
+// CollectFiles starts insert worker and walks through files
+func CollectFiles(db *Conn) {
 	// fire up insert worker
 	go InsertWorker(db)
 
 	// walk through files
-	err = filepath.Walk("../test/", FileInspector)
+	err := filepath.Walk("../test/", FileInspector)
 	checkErr(err)
 
 	// wait for clear
