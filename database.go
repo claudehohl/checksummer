@@ -80,11 +80,19 @@ func (c *Conn) GetOption(key string) (val string, err error) {
 	row := make(sqlite3.RowMap)
 	for s, err := c.Query(sql); err == nil; err = s.Next() {
 		var rowid int64
-		s.Scan(&rowid, row) // Assigns 1st column to rowid, the rest to row
-		fmt.Println("AFANG")
+		s.Scan(&rowid, row)     // Assigns 1st column to rowid, the rest to row
 		fmt.Println(rowid, row) // Prints "1 map[a:1 b:demo c:<nil>]"
-		fmt.Println("ÄNDI")
 	}
 
-	return "foo", nil
+	return "", nil
+}
+
+// SetOption sets an option value
+func (c *Conn) SetOption(key string, value string) error {
+	err := c.Exec("INSERT INTO options(o_name, o_value) VALUES(?, ?)", key, value)
+	if err != nil {
+		err = c.Exec("UPDATE options SET o_value = ? WHERE o_name = ?", value, key)
+		checkErr(err)
+	}
+	return err
 }
