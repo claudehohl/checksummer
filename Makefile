@@ -1,6 +1,8 @@
 all:
 	clear
+	go build
+	./checksummer ../test/
 	rm foo.db*
-	go run checksummer.go ../test/
+	rm ./checksummer
 
 .PHONY: all
