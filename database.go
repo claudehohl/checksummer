@@ -1,8 +1,12 @@
 package main
 
 import (
+	"bufio"
 	"errors"
+	"fmt"
 	"github.com/mxk/go-sqlite/sqlite3"
+	"os"
+	"strings"
 )
 
 // Conn wraps sqlite3.Conn
@@ -52,6 +56,41 @@ func (c *Conn) Init() error {
 	return nil
 }
 
+// ChangeBasepath sets the basepath
+func ChangeBasepath(db *Conn) {
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Println("Choose base path")
+	fmt.Print("(enter full path, without trailing slash): ")
+	basepath, _ := reader.ReadString('\n')
+	basepath = strings.Trim(basepath, "\n")
+	err := db.SetOption("basepath", basepath)
+	checkErr(err)
+}
+
+// GetOption gets an option from db
+func (c *Conn) GetOption(key string) (val string, err error) {
+	stmt, err := c.Query("SELECT o_value FROM options WHERE o_name = ?", key)
+	if err == nil {
+		var oValue string
+		err = stmt.Scan(&oValue)
+		if err != nil {
+			return "", err
+		}
+		return oValue, nil
+	}
+	return "", err
+}
+
+// SetOption sets an option value
+func (c *Conn) SetOption(key string, value string) error {
+	err := c.Exec("INSERT INTO options(o_name, o_value) VALUES(?, ?)", key, value)
+	if err != nil {
+		err = c.Exec("UPDATE options SET o_value = ? WHERE o_name = ?", value, key)
+		checkErr(err)
+	}
+	return err
+}
+
 // PrepareInsert precompiles insert statement
 func (c *Conn) PrepareInsert() (*sqlite3.Stmt, error) {
 	stmt, err := c.Prepare(`INSERT INTO files(filename, filesize, mtime) VALUES(?, ?, ?)`)
@@ -74,20 +113,6 @@ func (c *Conn) InsertFilename(f *File, stmt *sqlite3.Stmt) error {
 	return err
 }
 
-// GetOption gets an option from db
-func (c *Conn) GetOption(key string) (val string, err error) {
-	stmt, err := c.Query("SELECT o_value FROM options WHERE o_name = ?", key)
-	if err == nil {
-		var oValue string
-		err = stmt.Scan(&oValue)
-		if err != nil {
-			return "", err
-		}
-		return oValue, nil
-	}
-	return "", err
-}
-
 // GetFilenames fetches all filenames
 func (c *Conn) GetFilenames() (stmt *sqlite3.Stmt, err error) {
 
@@ -104,14 +129,4 @@ func (c *Conn) GetFilenames() (stmt *sqlite3.Stmt, err error) {
 	// return filenames, nil
 
 	// return []string{}, nil
-}
-
-// SetOption sets an option value
-func (c *Conn) SetOption(key string, value string) error {
-	err := c.Exec("INSERT INTO options(o_name, o_value) VALUES(?, ?)", key, value)
-	if err != nil {
-		err = c.Exec("UPDATE options SET o_value = ? WHERE o_name = ?", value, key)
-		checkErr(err)
-	}
-	return err
 }

@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 )
 
@@ -62,91 +61,5 @@ func LaunchGUI(db *Conn) {
 }
 
 func clearScreen() {
-	// fmt.Print("\033[H\033[2J")
-}
-
-// CollectFiles starts insert worker and walks through files
-func CollectFiles(db *Conn) {
-
-	// get basepath
-	basepath, err := db.GetOption("basepath")
-	checkErr(err)
-
-	// fire up insert worker
-	go InsertWorker(db)
-
-	// walk through files
-	err = filepath.Walk(basepath, FileInspector)
-	checkErr(err)
-
-	// wait for clear
-	<-clear
-
-	// final commit
-	commit <- true
-
-	// wait for commit
-	<-commitDone
-
-	// terminate InsertWorker
-	exit <- true
-}
-
-// CheckFilesDB collects stats for all files in database
-func CheckFilesDB(db *Conn) {
-
-	// // get basepath
-	// basepath, err := db.GetOption("basepath")
-	// checkErr(err)
-
-	// // fire up insert worker
-	// go InsertWorker(db)
-
-	// walk through files
-	ustmt, err := db.Prepare("UPDATE files SET filesize = ?, mtime = ?, file_found = 1 WHERE id = ?")
-	checkErr(err)
-
-	db.Begin()
-	i := 0
-	for stmt, err := db.GetFilenames(); err == nil; err = stmt.Next() {
-		var id int
-		var filename string
-		stmt.Scan(&id, &filename)
-		err = ustmt.Exec(33, 34, id)
-		checkErr(err)
-		i++
-
-		if i%10000 == 0 {
-			fmt.Println(i)
-			db.Commit()
-			err = db.Begin()
-			checkErr(err)
-		}
-	}
-	db.Commit()
-
-	// // wait for clear
-	// <-clear
-
-	// // final commit
-	// commit <- true
-
-	// // wait for commit
-	// <-commitDone
-
-	// // terminate InsertWorker
-	// exit <- true
-
-	return
-}
-
-// ChangeBasepath sets the basepath
-func ChangeBasepath(db *Conn) {
-	reader := bufio.NewReader(os.Stdin)
-	fmt.Println("Choose base path")
-	fmt.Print("(enter full path, without trailing slash): ")
-	basepath, _ := reader.ReadString('\n')
-	basepath = strings.Trim(basepath, "\n")
-	err := db.SetOption("basepath", basepath)
-	checkErr(err)
+	fmt.Print("\033[H\033[2J")
 }
