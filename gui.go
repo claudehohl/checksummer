@@ -46,9 +46,16 @@ func LaunchGUI(db *Conn) {
 
 	choice = strings.Trim(choice, "\n")
 
-	if choice == "cf" {
+	switch choice {
+	case "cf":
 		CollectFiles(db)
+	case "cb":
+		ChangeBasepath(db)
+	case "q":
+		return
 	}
+
+	LaunchGUI(db)
 
 }
 
@@ -76,4 +83,14 @@ func CollectFiles(db *Conn) {
 
 	// terminate InsertWorker
 	exit <- true
+}
+
+// ChangeBasepath sets the basepath
+func ChangeBasepath(db *Conn) {
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Println("Choose base path")
+	fmt.Print("(enter full path, without trailing slash): ")
+	basepath, _ := reader.ReadString('\n')
+	err := db.SetOption("basepath", basepath)
+	checkErr(err)
 }

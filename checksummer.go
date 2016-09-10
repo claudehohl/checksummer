@@ -1,10 +1,7 @@
 package main
 
 import (
-	"bufio"
 	"flag"
-	"fmt"
-	"os"
 )
 
 // channels
@@ -33,14 +30,10 @@ func main() {
 
 	basepath, _ := db.GetOption("basepath")
 	if basepath == "" {
-		reader := bufio.NewReader(os.Stdin)
-		fmt.Println("Choose base path")
-		fmt.Print("(enter full path, without trailing slash): ")
-		basepath, _ := reader.ReadString('\n')
-		err = db.SetOption("basepath", basepath)
+		ChangeBasepath(db)
 	}
 
-	//LaunchGUI(db)
+	LaunchGUI(db)
 }
 
 func checkErr(err error) {
