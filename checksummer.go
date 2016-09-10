@@ -65,15 +65,6 @@ func Open(dataSourceName string) (*Conn, error) {
 	return &Conn{c}, nil
 }
 
-// Begin starts a new transaction.
-func (c *Conn) Begin() error {
-	err := c.Conn.Begin()
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 // Init initializes the database
 func (c *Conn) Init() error {
 	err := c.Exec(`CREATE TABLE files (
