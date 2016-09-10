@@ -1,14 +1,13 @@
 package main
 
 import (
-	//"crypto/sha256"
-	"database/sql"
-	//"encoding/hex"
+	"crypto/sha256"
+	"encoding/hex"
+	"errors"
 	"flag"
 	"fmt"
 	"github.com/mxk/go-sqlite/sqlite3"
-	//"io"
-	"errors"
+	"io"
 	"os"
 	"path/filepath"
 )
@@ -19,14 +18,9 @@ var clear = make(chan bool)
 var commit = make(chan bool)
 var commitDone = make(chan bool)
 
-// Conn wraps sql.DB
+// Conn wraps sqlite3.Conn
 type Conn struct {
 	*sqlite3.Conn
-}
-
-// Tx wraps sql.Tx
-type Tx struct {
-	*sql.Tx
 }
 
 // File is the struct for a file holding attributes
@@ -106,9 +100,17 @@ func (c *Conn) Init() error {
 
 	// tuning
 	err = c.Exec("PRAGMA synchronous=OFF")
+	checkErr(err)
 	err = c.Exec("PRAGMA journal_size_limit=-1")
+	checkErr(err)
 
 	return nil
+}
+
+// PrepareInsert precompiles insert statement
+func (c *Conn) PrepareInsert() (*sqlite3.Stmt, error) {
+	stmt, err := c.Prepare(`INSERT INTO files(filename) VALUES(?)`)
+	return stmt, err
 }
 
 // InsertFilename inserts a filename
@@ -121,18 +123,8 @@ func (c *Conn) InsertFilename(f *File, stmt *sqlite3.Stmt) error {
 	}
 
 	// Perform the actual insert and return any errors.
-	// err := c.Exec(`INSERT INTO files(filename) VALUES(?)`, f.Name)
 	err := stmt.Exec(f.Name)
 	return err
-
-	// time.Sleep(1000 * time.Nanosecond)
-	// return nil
-}
-
-// PrepareInsert inserts a filename
-func (c *Conn) PrepareInsert() (*sqlite3.Stmt, error) {
-	stmt, err := c.Prepare(`INSERT INTO files(filename) VALUES(?)`)
-	return stmt, err
 }
 
 func fileInspector(path string, info os.FileInfo, err error) error {
@@ -148,13 +140,6 @@ func fileInspector(path string, info os.FileInfo, err error) error {
 		return nil
 	}
 
-	// hasher := sha256.New()
-	// _, err = io.Copy(hasher, file)
-	// checkErr(err)
-
-	// hash := hex.EncodeToString(hasher.Sum(nil))
-	// fmt.Printf(" %v\n", hash)
-
 	// wait for clear
 	<-clear
 
@@ -163,20 +148,37 @@ func fileInspector(path string, info os.FileInfo, err error) error {
 	return nil
 }
 
+func hashFile(path string) (hash string, err error) {
+	file, err := os.Open(path)
+	if err != nil {
+		fmt.Printf("File not found: %s", path)
+	}
+	defer file.Close()
+
+	// spew.Dump(info)
+
+	hasher := sha256.New()
+	_, err = io.Copy(hasher, file)
+	if err != nil {
+		return "", err
+	}
+
+	hash = hex.EncodeToString(hasher.Sum(nil))
+	fmt.Printf(" %v\n", hash)
+
+	return hash, nil
+}
+
 func insertWorker(c *Conn) {
-	i := 0
-
-	// TODO: make tx a type and assign methods to it
-
-	// db, err := Open("foo.db")
-	// checkErr(err)
-
 	err := c.Begin()
 	checkErr(err)
 
+	// Precompile SQL statement
 	stmt, err := c.PrepareInsert()
 
 	clear <- true
+
+	i := 0
 	for {
 		select {
 		case filename := <-insert:
@@ -200,7 +202,6 @@ func insertWorker(c *Conn) {
 			commitDone <- true
 		}
 	}
-
 }
 
 func checkErr(err error) {
