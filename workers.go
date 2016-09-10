@@ -37,7 +37,7 @@ func InsertWorker(c *Conn) {
 			commitDone <- true
 
 		case <-exit:
-			break
+			return
 		}
 	}
 }

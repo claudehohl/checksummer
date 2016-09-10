@@ -1,7 +1,7 @@
 all:
 	clear
 	go build
-	./checksummer ../test/
+	./checksummer foo.db
 	rm foo.db*
 	rm ./checksummer
 

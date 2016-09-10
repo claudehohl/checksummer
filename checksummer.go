@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"path/filepath"
 )
 
 // channels
@@ -19,33 +18,17 @@ type File struct {
 
 func main() {
 	flag.Parse()
-	root := flag.Arg(0)
-	if root == "" {
-		panic("please provide rootpath!")
+	database := flag.Arg(0)
+	if database == "" {
+		panic("please provide path to checksummer.db")
 	}
 
 	// initialize database
-	db, err := Open("foo.db")
+	db, err := Open(database)
+	checkErr(err)
 	db.Init()
 
-	// fire up insert worker
-	go InsertWorker(db)
-
-	// walk through files
-	err = filepath.Walk(root, FileInspector)
-	checkErr(err)
-
-	// wait for clear
-	<-clear
-
-	// final commit
-	commit <- true
-
-	// wait for commit
-	<-commitDone
-
-	// terminate InsertWorker
-	exit <- true
+	LaunchGUI(db)
 }
 
 func checkErr(err error) {
