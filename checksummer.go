@@ -5,13 +5,6 @@ import (
 	"time"
 )
 
-// channels
-var insert = make(chan File)
-var clear = make(chan bool)
-var commit = make(chan bool)
-var commitDone = make(chan bool)
-var exit = make(chan bool)
-
 // File is the struct for a file holding attributes
 type File struct {
 	Name     string

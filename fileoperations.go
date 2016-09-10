@@ -8,6 +8,13 @@ import (
 	"os"
 )
 
+// channels
+var insert = make(chan File)
+var clear = make(chan bool)
+var commit = make(chan bool)
+var commitDone = make(chan bool)
+var exit = make(chan bool)
+
 // FileInspector is the WalkFn, passes path into the insert channel
 func FileInspector(path string, info os.FileInfo, err error) error {
 	// skip nonregular files
