@@ -103,10 +103,11 @@ func CheckFilesDB(db *Conn) {
 	// go InsertWorker(db)
 
 	// walk through files
-	filenames, err := db.GetFilenames()
-	checkErr(err)
-	for _, f := range filenames {
-		fmt.Println(f)
+	for stmt, err := db.GetFilenames(); err == nil; err = stmt.Next() {
+		var id int
+		var filename string
+		stmt.Scan(&id, &filename)
+		fmt.Println(filename)
 	}
 
 	// // wait for clear

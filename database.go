@@ -89,16 +89,19 @@ func (c *Conn) GetOption(key string) (val string, err error) {
 }
 
 // GetFilenames fetches all filenames
-func (c *Conn) GetFilenames() (filenames []string, err error) {
+func (c *Conn) GetFilenames() (stmt *sqlite3.Stmt, err error) {
 
-	for stmt, err := c.Query("SELECT id, filename FROM files"); err == nil; err = stmt.Next() {
-		var id int
-		var filename string
-		stmt.Scan(&id, &filename)
-		// fmt.Println(filename)
-		filenames = append(filenames, filename)
-	}
-	return filenames, nil
+	stmt, err = c.Query("SELECT id, filename FROM files")
+	return stmt, err
+
+	// for stmt, err := c.Query("SELECT id, filename FROM files"); err == nil; err = stmt.Next() {
+	// 	var id int
+	// 	var filename string
+	// 	stmt.Scan(&id, &filename)
+	// 	// fmt.Println(filename)
+	// 	filenames = append(filenames, filename)
+	// }
+	// return filenames, nil
 
 	// return []string{}, nil
 }
