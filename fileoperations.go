@@ -68,7 +68,9 @@ func InsertWorker(c *Conn) {
 		select {
 		case filename := <-insert:
 			err := c.InsertFilename(&File{Name: filename}, stmt)
-			checkErr(err)
+			if err != nil {
+				// unique constraint failed, just skip.
+			}
 			i++
 
 			// commit every 10k inserts

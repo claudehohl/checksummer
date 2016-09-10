@@ -17,7 +17,7 @@ func LaunchGUI(db *Conn) {
 	checkErr(err)
 
 	fmt.Println("")
-	fmt.Println("basepath is: ", basepath)
+	fmt.Println("basepath is:", basepath)
 	fmt.Println("total size: ")
 	fmt.Println("")
 	fmt.Println("=== Collecting ===")
@@ -91,6 +91,7 @@ func ChangeBasepath(db *Conn) {
 	fmt.Println("Choose base path")
 	fmt.Print("(enter full path, without trailing slash): ")
 	basepath, _ := reader.ReadString('\n')
+	basepath = strings.Trim(basepath, "\n")
 	err := db.SetOption("basepath", basepath)
 	checkErr(err)
 }
