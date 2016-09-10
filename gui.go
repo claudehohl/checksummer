@@ -65,11 +65,16 @@ func clearScreen() {
 
 // CollectFiles starts insert worker and walks through files
 func CollectFiles(db *Conn) {
+
+	// get basepath
+	basepath, err := db.GetOption("basepath")
+	checkErr(err)
+
 	// fire up insert worker
 	go InsertWorker(db)
 
 	// walk through files
-	err := filepath.Walk("../test/", FileInspector)
+	err = filepath.Walk(basepath, FileInspector)
 	checkErr(err)
 
 	// wait for clear

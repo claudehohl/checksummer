@@ -20,7 +20,7 @@ func main() {
 	flag.Parse()
 	database := flag.Arg(0)
 	if database == "" {
-		panic("please provide path to checksummer.db")
+		panic("please provide path to checksummer.db!")
 	}
 
 	// initialize database

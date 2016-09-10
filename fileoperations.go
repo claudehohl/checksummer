@@ -10,17 +10,16 @@ import (
 
 // FileInspector is the WalkFn, passes path into the insert channel
 func FileInspector(path string, info os.FileInfo, err error) error {
+	// skip nonregular files
+	if info.Mode().IsRegular() == false {
+		return nil
+	}
+
 	file, err := os.Open(path)
 	if err != nil {
 		fmt.Printf("File not found: %s", path)
 	}
 	defer file.Close()
-
-	// spew.Dump(info)
-
-	if info.IsDir() {
-		return nil
-	}
 
 	// wait for clear
 	<-clear
