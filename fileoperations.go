@@ -34,7 +34,8 @@ func FileInspector(path string, info os.FileInfo, err error) error {
 func HashFile(path string) (hash string, err error) {
 	file, err := os.Open(path)
 	if err != nil {
-		fmt.Printf("File not found: %s", path)
+		return "", err
+		// fmt.Printf("File not found: %s", path)
 	}
 	defer file.Close()
 
