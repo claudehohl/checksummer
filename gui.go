@@ -103,12 +103,27 @@ func CheckFilesDB(db *Conn) {
 	// go InsertWorker(db)
 
 	// walk through files
+	ustmt, err := db.Prepare("UPDATE files SET filesize = ?, mtime = ?, file_found = 1 WHERE id = ?")
+	checkErr(err)
+
+	db.Begin()
+	i := 0
 	for stmt, err := db.GetFilenames(); err == nil; err = stmt.Next() {
 		var id int
 		var filename string
 		stmt.Scan(&id, &filename)
-		fmt.Println(filename)
+		err = ustmt.Exec(33, 34, id)
+		checkErr(err)
+		i++
+
+		if i%10000 == 0 {
+			fmt.Println(i)
+			db.Commit()
+			err = db.Begin()
+			checkErr(err)
+		}
 	}
+	db.Commit()
 
 	// // wait for clear
 	// <-clear
