@@ -22,7 +22,7 @@ func LaunchGUI(db *Conn) {
 	fmt.Println("")
 	fmt.Println("=== Collecting ===")
 	fmt.Println("[cf] collect files")
-	// fmt.Println("[cs] collect filestats")
+	fmt.Println("[cd] check files in database")
 	// fmt.Println("[mc] make checksums")
 	// fmt.Println("[rc] reindex & check all files")
 	// fmt.Println("")
@@ -49,6 +49,8 @@ func LaunchGUI(db *Conn) {
 	switch choice {
 	case "cf":
 		CollectFiles(db)
+	case "cd":
+		CheckFilesDB(db)
 	case "cb":
 		ChangeBasepath(db)
 	case "q":
@@ -88,6 +90,35 @@ func CollectFiles(db *Conn) {
 
 	// terminate InsertWorker
 	exit <- true
+}
+
+// CheckFilesDB collects stats for all files in database
+func CheckFilesDB(db *Conn) {
+
+	// // get basepath
+	// basepath, err := db.GetOption("basepath")
+	// checkErr(err)
+
+	// // fire up insert worker
+	// go InsertWorker(db)
+
+	// // walk through files
+	// err = filepath.Walk(basepath, FileInspector)
+	// checkErr(err)
+
+	// // wait for clear
+	// <-clear
+
+	// // final commit
+	// commit <- true
+
+	// // wait for commit
+	// <-commitDone
+
+	// // terminate InsertWorker
+	// exit <- true
+
+	return
 }
 
 // ChangeBasepath sets the basepath
