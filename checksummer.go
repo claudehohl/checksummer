@@ -10,6 +10,7 @@ var insert = make(chan string)
 var clear = make(chan bool)
 var commit = make(chan bool)
 var commitDone = make(chan bool)
+var exit = make(chan bool)
 
 // File is the struct for a file holding attributes
 type File struct {
@@ -40,8 +41,11 @@ func main() {
 	// final commit
 	commit <- true
 
-	// exit when commit is done
+	// wait for commit
 	<-commitDone
+
+	// terminate InsertWorker
+	exit <- true
 }
 
 func checkErr(err error) {
