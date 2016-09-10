@@ -62,7 +62,7 @@ func LaunchGUI(db *Conn) {
 }
 
 func clearScreen() {
-	fmt.Print("\033[H\033[2J")
+	// fmt.Print("\033[H\033[2J")
 }
 
 // CollectFiles starts insert worker and walks through files
@@ -102,9 +102,12 @@ func CheckFilesDB(db *Conn) {
 	// // fire up insert worker
 	// go InsertWorker(db)
 
-	// // walk through files
-	// err = filepath.Walk(basepath, FileInspector)
-	// checkErr(err)
+	// walk through files
+	filenames, err := db.GetFilenames()
+	checkErr(err)
+	for _, f := range filenames {
+		fmt.Println(f)
+	}
 
 	// // wait for clear
 	// <-clear

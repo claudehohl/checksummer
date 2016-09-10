@@ -88,6 +88,21 @@ func (c *Conn) GetOption(key string) (val string, err error) {
 	return "", err
 }
 
+// GetFilenames fetches all filenames
+func (c *Conn) GetFilenames() (filenames []string, err error) {
+
+	for stmt, err := c.Query("SELECT id, filename FROM files"); err == nil; err = stmt.Next() {
+		var id int
+		var filename string
+		stmt.Scan(&id, &filename)
+		// fmt.Println(filename)
+		filenames = append(filenames, filename)
+	}
+	return filenames, nil
+
+	// return []string{}, nil
+}
+
 // SetOption sets an option value
 func (c *Conn) SetOption(key string, value string) error {
 	err := c.Exec("INSERT INTO options(o_name, o_value) VALUES(?, ?)", key, value)
