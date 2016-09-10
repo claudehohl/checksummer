@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"github.com/mxk/go-sqlite/sqlite3"
 )
 
@@ -70,4 +71,20 @@ func (c *Conn) InsertFilename(f *File, stmt *sqlite3.Stmt) error {
 	// Perform the actual insert and return any errors.
 	err := stmt.Exec(f.Name)
 	return err
+}
+
+// GetOption gets an option from db
+func (c *Conn) GetOption(key string) (val string, err error) {
+
+	sql := "SELECT o_value FROM options WHERE o_name = ?"
+	row := make(sqlite3.RowMap)
+	for s, err := c.Query(sql); err == nil; err = s.Next() {
+		var rowid int64
+		s.Scan(&rowid, row) // Assigns 1st column to rowid, the rest to row
+		fmt.Println("AFANG")
+		fmt.Println(rowid, row) // Prints "1 map[a:1 b:demo c:<nil>]"
+		fmt.Println("ÄNDI")
+	}
+
+	return "foo", nil
 }
