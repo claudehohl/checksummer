@@ -2,10 +2,11 @@ package main
 
 import (
 	"flag"
+	"time"
 )
 
 // channels
-var insert = make(chan string)
+var insert = make(chan File)
 var clear = make(chan bool)
 var commit = make(chan bool)
 var commitDone = make(chan bool)
@@ -13,7 +14,10 @@ var exit = make(chan bool)
 
 // File is the struct for a file holding attributes
 type File struct {
-	Name string
+	Name     string
+	Size     int64
+	Mtime    time.Time
+	Checksum string
 }
 
 func main() {

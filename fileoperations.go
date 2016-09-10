@@ -21,10 +21,12 @@ func FileInspector(path string, info os.FileInfo, err error) error {
 	}
 	defer file.Close()
 
+	// spew.Dump(info)
+
 	// wait for clear
 	<-clear
 
-	insert <- path
+	insert <- File{Name: path, Size: info.Size(), Mtime: info.ModTime()}
 
 	return nil
 }
@@ -37,8 +39,6 @@ func HashFile(path string) (hash string, err error) {
 		// fmt.Printf("File not found: %s", path)
 	}
 	defer file.Close()
-
-	// spew.Dump(info)
 
 	hasher := sha256.New()
 	_, err = io.Copy(hasher, file)
@@ -66,7 +66,7 @@ func InsertWorker(c *Conn) {
 	for {
 		select {
 		case filename := <-insert:
-			err := c.InsertFilename(&File{Name: filename}, stmt)
+			err := c.InsertFilename(&filename, stmt)
 			if err != nil {
 				// unique constraint failed, just skip.
 			}

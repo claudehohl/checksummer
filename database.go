@@ -54,7 +54,7 @@ func (c *Conn) Init() error {
 
 // PrepareInsert precompiles insert statement
 func (c *Conn) PrepareInsert() (*sqlite3.Stmt, error) {
-	stmt, err := c.Prepare(`INSERT INTO files(filename) VALUES(?)`)
+	stmt, err := c.Prepare(`INSERT INTO files(filename, filesize, mtime) VALUES(?, ?, ?)`)
 	return stmt, err
 }
 
@@ -65,10 +65,12 @@ func (c *Conn) InsertFilename(f *File, stmt *sqlite3.Stmt) error {
 		return errors.New("file required")
 	} else if f.Name == "" {
 		return errors.New("name required")
+	} else if f.Size == -1 {
+		return errors.New("size required")
 	}
 
 	// Perform the actual insert and return any errors.
-	err := stmt.Exec(f.Name)
+	err := stmt.Exec(f.Name, f.Size, f.Mtime)
 	return err
 }
 
