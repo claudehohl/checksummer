@@ -40,10 +40,10 @@ func main() {
 	db.Init()
 
 	// fire up insert worker
-	go insertWorker(db)
+	go InsertWorker(db)
 
 	// walk through files
-	err = filepath.Walk(root, fileInspector)
+	err = filepath.Walk(root, FileInspector)
 	checkErr(err)
 
 	// wait for clear
@@ -118,7 +118,8 @@ func (c *Conn) InsertFilename(f *File, stmt *sqlite3.Stmt) error {
 	return err
 }
 
-func fileInspector(path string, info os.FileInfo, err error) error {
+// FileInspector is the WalkFn, passes path into the insert channel
+func FileInspector(path string, info os.FileInfo, err error) error {
 	file, err := os.Open(path)
 	if err != nil {
 		fmt.Printf("File not found: %s", path)
@@ -139,7 +140,8 @@ func fileInspector(path string, info os.FileInfo, err error) error {
 	return nil
 }
 
-func hashFile(path string) (hash string, err error) {
+// HashFile takes a path and returns a hash
+func HashFile(path string) (hash string, err error) {
 	file, err := os.Open(path)
 	if err != nil {
 		fmt.Printf("File not found: %s", path)
@@ -160,7 +162,8 @@ func hashFile(path string) (hash string, err error) {
 	return hash, nil
 }
 
-func insertWorker(c *Conn) {
+// InsertWorker runs the statement, commits every 10k inserts
+func InsertWorker(c *Conn) {
 	err := c.Begin()
 	checkErr(err)
 
@@ -175,10 +178,9 @@ func insertWorker(c *Conn) {
 		case filename := <-insert:
 			err := c.InsertFilename(&File{Name: filename}, stmt)
 			checkErr(err)
-			// fmt.Printf("insert filename: %v\n", filename)
-			// fmt.Printf("insert counter: %v\n", i)
-			// fmt.Println("")
 			i++
+
+			// commit every 10k inserts
 			if i%10000 == 0 {
 				fmt.Println(i)
 				c.Commit()
