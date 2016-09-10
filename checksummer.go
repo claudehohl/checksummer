@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-// File is the struct for a file holding attributes
+// File holds the attributes
 type File struct {
 	Name     string
 	Size     int64
