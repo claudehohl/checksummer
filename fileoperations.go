@@ -78,9 +78,9 @@ func InsertWorker(db *DB) {
 			// commit every 10k inserts
 			if i%10000 == 0 {
 				fmt.Println(i)
-				tx.Commit()
-				tx, err = db.Begin()
-				checkErr(err)
+				// tx.Commit()
+				// tx, err = db.Begin()
+				// checkErr(err)
 			}
 
 			clear <- true
