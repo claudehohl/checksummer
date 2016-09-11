@@ -117,9 +117,6 @@ func CheckFilesDB(c *Conn) {
 	basepath, err := c.GetOption("basepath")
 	checkErr(err)
 
-	rowmap := make(sqlite3.RowMap)
-	var rows []File
-
 	fileCount, err := c.GetCount()
 	checkErr(err)
 
@@ -129,7 +126,11 @@ func CheckFilesDB(c *Conn) {
 		if i >= 10000 {
 			fmt.Println(i)
 		}
+
+		rowmap := make(sqlite3.RowMap)
+		var rows []File
 		var stmt *sqlite3.Stmt
+
 		for stmt, err = c.Query("SELECT id, filename FROM files LIMIT ?, 10000", i); err == nil; err = stmt.Next() {
 			stmt.Scan(rowmap)
 			rows = append(rows, File{ID: rowmap["id"].(int64), Name: rowmap["filename"].(string)})
