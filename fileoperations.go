@@ -28,7 +28,7 @@ func CollectFiles(c *Conn) {
 	go InsertWorker(c)
 
 	// walk through files
-	err = filepath.Walk(basepath, FileInspector)
+	err = filepath.Walk(basepath, InsertFileInspector)
 	checkErr(err)
 
 	// wait for clear
@@ -92,23 +92,18 @@ func InsertWorker(c *Conn) {
 	}
 }
 
-// FileInspector is the WalkFn, passes path into the insert channel
-func FileInspector(path string, info os.FileInfo, err error) error {
+// InsertFileInspector is the WalkFn, passes path into the insert channel
+func InsertFileInspector(path string, info os.FileInfo, err error) error {
 
 	// skip nonregular files
 	if info.Mode().IsRegular() == false {
 		return nil
 	}
 
-	file, err := os.Open(path)
-	if err != nil {
-		fmt.Printf("File not found: %s", path)
-	}
-	defer file.Close()
-
 	// wait for clear
 	<-clear
 
+	// pass fileinfo to the insert channel
 	insert <- File{Name: path, Size: info.Size(), Mtime: info.ModTime()}
 
 	return nil
