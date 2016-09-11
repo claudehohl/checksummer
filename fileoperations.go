@@ -191,9 +191,8 @@ func MakeChecksums(db *DB) {
 	// therefore, we process by fetching blocks of 1000 files
 	blockSize := 100
 	for i := fileCount; i > 0; i = i - blockSize {
-		rowmap := make(sqlite3.RowMap)
-		var rows []File
-		var stmt *sqlite3.Stmt
+		var files []File
+		var rows *sql.Rows
 		offset := fileCount - i + blockSize
 		if offset > fileCount {
 			offset = fileCount
@@ -201,20 +200,24 @@ func MakeChecksums(db *DB) {
 		fmt.Println("offset:", offset)
 		remaining := i
 
-		for stmt, err = db.Query("SELECT id, filename, filesize FROM files WHERE checksum_sha256 IS NULL AND file_found = '1' LIMIT ?, ?", offset, 100); err == nil; err = stmt.Next() {
-			stmt.Scan(rowmap)
-			rows = append(rows, File{ID: rowmap["id"].(int64), Name: rowmap["filename"].(string), Size: rowmap["filesize"].(int64)})
+		for rows, err = db.Query("SELECT id, filename, filesize FROM files WHERE checksum_sha256 IS NULL AND file_found = '1' LIMIT ?, ?", offset, 100); err == nil; rows.Next() {
+			var id int64
+			var filename string
+			var filesize int64
+			rows.Scan(&id, &filename, &filesize)
+			files = append(files, File{ID: id, Name: filename, Size: filesize})
 		}
-		stmt.Close()
+		rows.Close()
+
+		tx, err := db.Begin()
 
 		// prepare update statement
-		stmtUpdate, err := db.Prepare("UPDATE files SET checksum_sha256 = ? WHERE id = ?")
+		stmtUpdate, err := tx.Prepare("UPDATE files SET checksum_sha256 = ? WHERE id = ?")
 		checkErr(err)
-		stmtNotFound, err := db.Prepare("UPDATE files SET file_found = 0 WHERE id = ?")
+		stmtNotFound, err := tx.Prepare("UPDATE files SET file_found = 0 WHERE id = ?")
 		checkErr(err)
 
-		db.Begin()
-		for _, file := range rows {
+		for _, file := range files {
 			path := basepath + file.Name
 
 			fmt.Printf("(%d) making checksum: %s (%d)... ", remaining, path, file.Size)
@@ -222,12 +225,12 @@ func MakeChecksums(db *DB) {
 			f, err := os.Open(path)
 			if err != nil {
 				// file not found
-				err = stmtNotFound.Exec(file.ID)
+				_, err = stmtNotFound.Exec(file.ID)
 				checkErr(err)
 			} else {
 				hash, err := HashFile(path)
 				checkErr(err)
-				err = stmtUpdate.Exec(hash, file.ID)
+				_, err = stmtUpdate.Exec(hash, file.ID)
 				checkErr(err)
 			}
 			f.Close()
@@ -238,7 +241,7 @@ func MakeChecksums(db *DB) {
 
 		stmtUpdate.Close()
 		stmtNotFound.Close()
-		db.Commit()
+		tx.Commit()
 	}
 
 	return

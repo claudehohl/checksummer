@@ -8,7 +8,7 @@ import (
 )
 
 // LaunchGUI starts the user interface
-func LaunchGUI(db *Conn) {
+func LaunchGUI(db *DB) {
 
 	clearScreen()
 
