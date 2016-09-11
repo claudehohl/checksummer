@@ -53,11 +53,15 @@ func InsertWorker(db *DB) {
 	basepath, err := db.GetOption("basepath")
 	checkErr(err)
 
-	tx, err := db.Begin()
+	var tx *sql.Tx
+	var stmt *sql.Stmt
+
+	tx, err = db.Begin()
 	checkErr(err)
 
 	// Precompile SQL statement
-	stmt, err := tx.Prepare("INSERT INTO files(filename, filesize, mtime) VALUES(?, ?, ?)")
+	stmt, err = tx.Prepare("INSERT INTO files(filename, filesize, mtime) VALUES(?, ?, ?)")
+	checkErr(err)
 
 	clear <- true
 
@@ -69,7 +73,6 @@ func InsertWorker(db *DB) {
 			file.Name = strings.Replace(file.Name, basepath, "", 1)
 
 			_, err := stmt.Exec(file.Name, file.Size, file.Mtime)
-			fmt.Println(file.Name)
 			if err != nil {
 				// unique constraint failed, just skip.
 			}
@@ -78,9 +81,19 @@ func InsertWorker(db *DB) {
 			// commit every 10k inserts
 			if i%10000 == 0 {
 				fmt.Println(i)
-				// tx.Commit()
-				// tx, err = db.Begin()
-				// checkErr(err)
+				stmt.Close()
+				tx.Commit()
+
+				// well. sql closes the connection after Commit(), unlike in python.
+				// so we have to reopen it again.
+				// what a special hack'n'bang, all because WalkFn doesn't accept parameters... -.-
+
+				tx, err = db.Begin()
+				checkErr(err)
+
+				// Precompile SQL statement
+				stmt, err = tx.Prepare("INSERT INTO files(filename, filesize, mtime) VALUES(?, ?, ?)")
+				checkErr(err)
 			}
 
 			clear <- true
@@ -121,7 +134,6 @@ func CheckFilesDB(db *DB) {
 
 	fileCount, err := db.GetCount("SELECT count(id) FROM files")
 	checkErr(err)
-	fmt.Println(fileCount)
 
 	// sqlite dies with "unable to open database [14]" when I run two stmts concurrently
 	// therefore, we process by fetching blocks of 10000 files
