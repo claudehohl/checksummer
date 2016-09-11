@@ -69,10 +69,11 @@ func ChangeBasepath(db *DB) {
 
 // GetOption gets an option from db
 func (db *DB) GetOption(key string) (val string, err error) {
-	stmt, err := db.Query("SELECT o_value FROM options WHERE o_name = ?", key)
+	rows, err := db.Query("SELECT o_value FROM options WHERE o_name = ?", key)
 	if err == nil {
+		rows.Next()
 		var oValue string
-		err = stmt.Scan(&oValue)
+		err = rows.Scan(&oValue)
 		if err != nil {
 			return "", err
 		}
