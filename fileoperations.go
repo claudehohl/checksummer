@@ -151,8 +151,8 @@ func CheckFilesDB(c *Conn) {
 				err = stmt.Exec(nil, nil, 0, file.ID)
 				checkErr(err)
 			} else {
-				err = stmt.Exec(33, 34, 1, file.ID)
-				checkErr(err)
+				GetStats(f, &file)
+				stmt.Exec(file.Size, file.Mtime, 1, file.ID)
 			}
 			f.Close()
 		}
@@ -162,6 +162,14 @@ func CheckFilesDB(c *Conn) {
 	}
 
 	return
+}
+
+// GetStats populates File with os.FileInfo stats
+func GetStats(f *os.File, file *File) {
+	fi, err := f.Stat()
+	checkErr(err)
+	file.Size = fi.Size()
+	file.Mtime = fi.ModTime()
 }
 
 // HashFile takes a path and returns a hash
