@@ -116,8 +116,8 @@ func CheckFilesDB(c *Conn) {
 	basepath, err := c.GetOption("basepath")
 	checkErr(err)
 
-	// walk through files
-	ustmt, err := c.Prepare("UPDATE files SET filesize = ?, mtime = ?, file_found = 1 WHERE id = ?")
+	// prepare update statement
+	updateStmt, err := c.Prepare("UPDATE files SET filesize = ?, mtime = ?, file_found = ? WHERE id = ?")
 	checkErr(err)
 
 	c.Begin()
@@ -129,15 +129,26 @@ func CheckFilesDB(c *Conn) {
 
 		// TODO
 		path := basepath + filename
-		fmt.Println(path)
 
-		err = ustmt.Exec(33, 34, id)
-		checkErr(err)
+		file, err := os.Open(path)
+		defer file.Close()
+		if err != nil {
+			// file not found
+			err = updateStmt.Exec(nil, nil, 0, id)
+			checkErr(err)
+		} else {
+			err = updateStmt.Exec(33, 34, 1, id)
+			checkErr(err)
+		}
+
 		i++
 
 		if i%10000 == 0 {
 			fmt.Println(i)
 			c.Commit()
+
+			updateStmt, err = c.Prepare("UPDATE files SET filesize = ?, mtime = ?, file_found = ? WHERE id = ?")
+			checkErr(err)
 			err = c.Begin()
 			checkErr(err)
 		}
