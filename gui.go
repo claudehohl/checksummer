@@ -22,7 +22,7 @@ func LaunchGUI(db *Conn) {
 	fmt.Println("=== Collecting ===")
 	fmt.Println("[cf] collect files")
 	fmt.Println("[cd] check files in database")
-	// fmt.Println("[mc] make checksums")
+	fmt.Println("[mc] make checksums")
 	// fmt.Println("[rc] reindex & check all files")
 	// fmt.Println("")
 	// fmt.Println("=== Stats ===")
@@ -52,6 +52,8 @@ func LaunchGUI(db *Conn) {
 		CheckFilesDB(db)
 	case "cb":
 		ChangeBasepath(db)
+	case "mc":
+		MakeChecksums(db)
 	case "q":
 		return
 	}

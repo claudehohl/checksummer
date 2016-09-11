@@ -151,8 +151,10 @@ func CheckFilesDB(c *Conn) {
 				err = stmt.Exec(nil, nil, 0, file.ID)
 				checkErr(err)
 			} else {
-				GetStats(f, &file)
-				stmt.Exec(file.Size, file.Mtime, 1, file.ID)
+				err = GetStats(f, &file)
+				checkErr(err)
+				err = stmt.Exec(file.Size, file.Mtime, 1, file.ID)
+				checkErr(err)
 			}
 			f.Close()
 		}
@@ -165,11 +167,69 @@ func CheckFilesDB(c *Conn) {
 }
 
 // GetStats populates File with os.FileInfo stats
-func GetStats(f *os.File, file *File) {
+func GetStats(f *os.File, file *File) error {
 	fi, err := f.Stat()
-	checkErr(err)
 	file.Size = fi.Size()
 	file.Mtime = fi.ModTime()
+	return err
+}
+
+// MakeChecksums makes checksums of all files
+func MakeChecksums(c *Conn) {
+
+	// get basepath
+	basepath, err := c.GetOption("basepath")
+	checkErr(err)
+
+	fileCount, err := c.GetCount()
+	checkErr(err)
+
+	// sqlite dies with "unable to open database [14]" when I run two stmts concurrently
+	// therefore, we process by fetching blocks of 10000 files
+	for i := 0; i < fileCount; i = i + 10000 {
+		if i >= 10000 {
+			fmt.Println(i)
+		}
+
+		rowmap := make(sqlite3.RowMap)
+		var rows []File
+		var stmt *sqlite3.Stmt
+
+		for stmt, err = c.Query("SELECT id, filename, filesize FROM files WHERE checksum_sha256 IS NULL AND file_found = '1'"); err == nil; err = stmt.Next() {
+			stmt.Scan(rowmap)
+			rows = append(rows, File{ID: rowmap["id"].(int64), Name: rowmap["filename"].(string), Size: rowmap["filesize"].(int64)})
+		}
+		stmt.Close()
+
+		// prepare update statement
+		stmt, err := c.Prepare("UPDATE files SET checksum_sha256 = ? WHERE id = ?")
+		checkErr(err)
+		stmtNotFound, err := c.Prepare("UPDATE files SET file_found = 0 WHERE id = ?")
+		checkErr(err)
+
+		c.Begin()
+		for _, file := range rows {
+			path := basepath + file.Name
+
+			f, err := os.Open(path)
+			if err != nil {
+				// file not found
+				err = stmtNotFound.Exec(file.ID)
+				checkErr(err)
+			} else {
+				hash, err := HashFile(path)
+				checkErr(err)
+				err = stmt.Exec(hash, file.ID)
+				checkErr(err)
+			}
+			f.Close()
+		}
+
+		stmt.Close()
+		c.Commit()
+	}
+
+	return
 }
 
 // HashFile takes a path and returns a hash
@@ -177,8 +237,8 @@ func HashFile(path string) (hash string, err error) {
 
 	file, err := os.Open(path)
 	if err != nil {
+		fmt.Printf("File not found: %s", path)
 		return "", err
-		// fmt.Printf("File not found: %s", path)
 	}
 	defer file.Close()
 
@@ -189,7 +249,6 @@ func HashFile(path string) (hash string, err error) {
 	}
 
 	hash = hex.EncodeToString(hasher.Sum(nil))
-	fmt.Printf(" %v\n", hash)
 
 	return hash, nil
 }
