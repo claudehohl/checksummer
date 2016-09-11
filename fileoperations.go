@@ -123,43 +123,43 @@ func CheckFilesDB(c *Conn) {
 	// sqlite dies with "unable to open database [14]" when I run two stmts concurrently
 	// therefore, we process by fetching blocks of 10000 files
 	for i := 0; i < 50000; i = i + 10000 {
-
 		var stmt *sqlite3.Stmt
-
 		for stmt, err = c.Query("SELECT id, filename FROM files LIMIT ?, 10000", i); err == nil; err = stmt.Next() {
 			stmt.Scan(rowmap)
 			rows = append(rows, rowmap)
+			//TODO: FACK YOU
 		}
 		stmt.Close()
 		fmt.Println(i)
 
-		c.Begin()
+		// c.Begin()
 
 		// prepare update statement
-		updateStmt, err := c.Prepare("UPDATE files SET filesize = ?, mtime = ?, file_found = ? WHERE id = ?")
-		checkErr(err)
+		// stmt, err := c.Prepare("UPDATE files SET filesize = ?, mtime = ?, file_found = ? WHERE id = ?")
+		// checkErr(err)
 
 		for _, row := range rows {
 			id := row["id"]
 			filename := row["filename"]
 			path := basepath + filename.(string)
+			fmt.Println(path)
 
 			file, err := os.Open(path)
 			if err != nil {
 				// file not found
 				fmt.Println("file not found")
-				err = updateStmt.Exec(nil, nil, 0, id)
+				err = c.Exec("UPDATE files SET filesize = ?, mtime = ?, file_found = ? WHERE id = ?", nil, nil, 0, id)
 				checkErr(err)
 			} else {
 				fmt.Println("file found")
-				err = updateStmt.Exec(33, 34, 1, id)
+				err = c.Exec("UPDATE files SET filesize = ?, mtime = ?, file_found = ? WHERE id = ?", 33, 34, 1, id)
 				checkErr(err)
 			}
 			file.Close()
 		}
 
-		updateStmt.Close()
-		c.Commit()
+		// stmt.Close()
+		// c.Commit()
 		fmt.Println("after commit")
 		// time.Sleep(time.Second * 1)
 	}
