@@ -185,24 +185,28 @@ func MakeChecksums(c *Conn) {
 	checkErr(err)
 
 	// sqlite dies with "unable to open database [14]" when I run two stmts concurrently
-	// therefore, we process by fetching blocks of 10000 files
-	for i := 0; i < fileCount; i = i + 1000 {
-		if i >= 1000 {
-			fmt.Println(i)
-		}
-
+	// therefore, we process by fetching blocks of 1000 files
+	blockSize := 100
+	for i := fileCount; i > 0; i = i - blockSize {
 		rowmap := make(sqlite3.RowMap)
 		var rows []File
 		var stmt *sqlite3.Stmt
+		offset := fileCount - i + blockSize
+		if offset > fileCount {
+			offset = fileCount
+		}
+		fmt.Println("offset:", offset)
+		remaining := i
 
-		for stmt, err = c.Query("SELECT id, filename, filesize FROM files WHERE checksum_sha256 IS NULL AND file_found = '1' LIMIT ?, 1000", i); err == nil; err = stmt.Next() {
+		for stmt, err = c.Query("SELECT id, filename, filesize FROM files WHERE checksum_sha256 IS NULL AND file_found = '1' LIMIT ?, ?", offset, 100); err == nil; err = stmt.Next() {
 			stmt.Scan(rowmap)
 			rows = append(rows, File{ID: rowmap["id"].(int64), Name: rowmap["filename"].(string), Size: rowmap["filesize"].(int64)})
 		}
 		stmt.Close()
+		// spew.Dump(stmt.Busy())
 
 		// prepare update statement
-		stmt, err := c.Prepare("UPDATE files SET checksum_sha256 = ? WHERE id = ?")
+		stmtUpdate, err := c.Prepare("UPDATE files SET checksum_sha256 = ? WHERE id = ?")
 		checkErr(err)
 		stmtNotFound, err := c.Prepare("UPDATE files SET file_found = 0 WHERE id = ?")
 		checkErr(err)
@@ -211,7 +215,7 @@ func MakeChecksums(c *Conn) {
 		for _, file := range rows {
 			path := basepath + file.Name
 
-			fmt.Printf("making checksum: %s (%d)... ", path, file.Size)
+			fmt.Printf("(%d) making checksum: %s (%d)... ", remaining, path, file.Size)
 
 			f, err := os.Open(path)
 			if err != nil {
@@ -221,15 +225,17 @@ func MakeChecksums(c *Conn) {
 			} else {
 				hash, err := HashFile(path)
 				checkErr(err)
-				err = stmt.Exec(hash, file.ID)
+				err = stmtUpdate.Exec(hash, file.ID)
 				checkErr(err)
 			}
 			f.Close()
 
 			fmt.Println("OK")
+			remaining--
 		}
 
-		stmt.Close()
+		stmtUpdate.Close()
+		stmtNotFound.Close()
 		c.Commit()
 	}
 
