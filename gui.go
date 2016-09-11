@@ -61,5 +61,5 @@ func LaunchGUI(db *Conn) {
 }
 
 func clearScreen() {
-	// fmt.Print("\033[H\033[2J")
+	fmt.Print("\033[H\033[2J")
 }

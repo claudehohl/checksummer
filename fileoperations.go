@@ -123,21 +123,23 @@ func CheckFilesDB(c *Conn) {
 
 	// sqlite dies with "unable to open database [14]" when I run two stmts concurrently
 	// therefore, we process by fetching blocks of 10000 files
+	// TODO: get files count
 	for i := 0; i < 50000; i = i + 10000 {
+		if i >= 10000 {
+			fmt.Println(i)
+		}
 		var stmt *sqlite3.Stmt
 		for stmt, err = c.Query("SELECT id, filename FROM files LIMIT ?, 10000", i); err == nil; err = stmt.Next() {
 			stmt.Scan(rowmap)
 			rows = append(rows, File{ID: rowmap["id"].(int64), Name: rowmap["filename"].(string)})
 		}
 		stmt.Close()
-		fmt.Println(i)
-
-		c.Begin()
 
 		// prepare update statement
 		stmt, err := c.Prepare("UPDATE files SET filesize = ?, mtime = ?, file_found = ? WHERE id = ?")
 		checkErr(err)
 
+		c.Begin()
 		for _, file := range rows {
 			path := basepath + file.Name
 
@@ -155,8 +157,6 @@ func CheckFilesDB(c *Conn) {
 
 		stmt.Close()
 		c.Commit()
-		fmt.Println("after commit")
-		// time.Sleep(time.Second * 1)
 	}
 
 	return
