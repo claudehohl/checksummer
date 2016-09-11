@@ -1,0 +1,13 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"checksumSHA1": "r95Wtb4rIdeII5mmia9q/qIHeO0=",
+			"path": "github.com/mxk/go-sqlite/sqlite3",
+			"revision": "167da9432e1f4602e95ea67b67051cfa34412e3f",
+			"revisionTime": "2014-06-11T21:49:08Z"
+		}
+	],
+	"rootPath": "github.com/claudehohl/checksummer"
+}
