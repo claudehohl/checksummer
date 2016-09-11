@@ -4,7 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"github.com/mxk/go-sqlite/sqlite3"
+	_ "github.com/mattn/go-sqlite3"
 	"io"
 	"os"
 	"path/filepath"
@@ -19,14 +19,14 @@ var commitDone = make(chan bool)
 var exit = make(chan bool)
 
 // CollectFiles starts insert worker and walks through files
-func CollectFiles(c *Conn) {
+func CollectFiles(db *DB) {
 
 	// get basepath
-	basepath, err := c.GetOption("basepath")
+	basepath, err := db.GetOption("basepath")
 	checkErr(err)
 
 	// fire up insert worker
-	go InsertWorker(c)
+	go InsertWorker(db)
 
 	// walk through files
 	err = filepath.Walk(basepath, InsertFileInspector)
@@ -46,17 +46,17 @@ func CollectFiles(c *Conn) {
 }
 
 // InsertWorker runs the statement, commits every 10k inserts
-func InsertWorker(c *Conn) {
+func InsertWorker(db *DB) {
 
 	// get basepath
-	basepath, err := c.GetOption("basepath")
+	basepath, err := db.GetOption("basepath")
 	checkErr(err)
 
-	err = c.Begin()
+	err = db.Begin()
 	checkErr(err)
 
 	// Precompile SQL statement
-	stmt, err := c.Prepare("INSERT INTO files(filename, filesize, mtime) VALUES(?, ?, ?)")
+	stmt, err := db.Prepare("INSERT INTO files(filename, filesize, mtime) VALUES(?, ?, ?)")
 
 	clear <- true
 
@@ -76,15 +76,15 @@ func InsertWorker(c *Conn) {
 			// commit every 10k inserts
 			if i%10000 == 0 {
 				fmt.Println(i)
-				c.Commit()
-				err = c.Begin()
+				db.Commit()
+				err = db.Begin()
 				checkErr(err)
 			}
 
 			clear <- true
 
 		case <-commit:
-			c.Commit()
+			db.Commit()
 			commitDone <- true
 
 		case <-exit:
@@ -111,13 +111,13 @@ func InsertFileInspector(path string, info os.FileInfo, err error) error {
 }
 
 // CheckFilesDB collects stats for all files in database
-func CheckFilesDB(c *Conn) {
+func CheckFilesDB(db *DB) {
 
 	// get basepath
-	basepath, err := c.GetOption("basepath")
+	basepath, err := db.GetOption("basepath")
 	checkErr(err)
 
-	fileCount, err := c.GetCount("SELECT count(id) FROM files")
+	fileCount, err := db.GetCount("SELECT count(id) FROM files")
 	checkErr(err)
 
 	// sqlite dies with "unable to open database [14]" when I run two stmts concurrently
@@ -131,17 +131,17 @@ func CheckFilesDB(c *Conn) {
 		var rows []File
 		var stmt *sqlite3.Stmt
 
-		for stmt, err = c.Query("SELECT id, filename FROM files LIMIT ?, 10000", i); err == nil; err = stmt.Next() {
+		for stmt, err = db.Query("SELECT id, filename FROM files LIMIT ?, 10000", i); err == nil; err = stmt.Next() {
 			stmt.Scan(rowmap)
 			rows = append(rows, File{ID: rowmap["id"].(int64), Name: rowmap["filename"].(string)})
 		}
 		stmt.Close()
 
 		// prepare update statement
-		stmt, err := c.Prepare("UPDATE files SET filesize = ?, mtime = ?, file_found = ? WHERE id = ?")
+		stmt, err := db.Prepare("UPDATE files SET filesize = ?, mtime = ?, file_found = ? WHERE id = ?")
 		checkErr(err)
 
-		c.Begin()
+		db.Begin()
 		for _, file := range rows {
 			path := basepath + file.Name
 
@@ -160,7 +160,7 @@ func CheckFilesDB(c *Conn) {
 		}
 
 		stmt.Close()
-		c.Commit()
+		db.Commit()
 	}
 
 	return
@@ -175,13 +175,13 @@ func GetStats(f *os.File, file *File) error {
 }
 
 // MakeChecksums makes checksums of all files
-func MakeChecksums(c *Conn) {
+func MakeChecksums(db *DB) {
 
 	// get basepath
-	basepath, err := c.GetOption("basepath")
+	basepath, err := db.GetOption("basepath")
 	checkErr(err)
 
-	fileCount, err := c.GetCount("SELECT count(id) FROM files WHERE checksum_sha256 IS NULL AND file_found = '1'")
+	fileCount, err := db.GetCount("SELECT count(id) FROM files WHERE checksum_sha256 IS NULL AND file_found = '1'")
 	checkErr(err)
 
 	// sqlite dies with "unable to open database [14]" when I run two stmts concurrently
@@ -198,20 +198,19 @@ func MakeChecksums(c *Conn) {
 		fmt.Println("offset:", offset)
 		remaining := i
 
-		for stmt, err = c.Query("SELECT id, filename, filesize FROM files WHERE checksum_sha256 IS NULL AND file_found = '1' LIMIT ?, ?", offset, 100); err == nil; err = stmt.Next() {
+		for stmt, err = db.Query("SELECT id, filename, filesize FROM files WHERE checksum_sha256 IS NULL AND file_found = '1' LIMIT ?, ?", offset, 100); err == nil; err = stmt.Next() {
 			stmt.Scan(rowmap)
 			rows = append(rows, File{ID: rowmap["id"].(int64), Name: rowmap["filename"].(string), Size: rowmap["filesize"].(int64)})
 		}
 		stmt.Close()
-		// spew.Dump(stmt.Busy())
 
 		// prepare update statement
-		stmtUpdate, err := c.Prepare("UPDATE files SET checksum_sha256 = ? WHERE id = ?")
+		stmtUpdate, err := db.Prepare("UPDATE files SET checksum_sha256 = ? WHERE id = ?")
 		checkErr(err)
-		stmtNotFound, err := c.Prepare("UPDATE files SET file_found = 0 WHERE id = ?")
+		stmtNotFound, err := db.Prepare("UPDATE files SET file_found = 0 WHERE id = ?")
 		checkErr(err)
 
-		c.Begin()
+		db.Begin()
 		for _, file := range rows {
 			path := basepath + file.Name
 
@@ -236,7 +235,7 @@ func MakeChecksums(c *Conn) {
 
 		stmtUpdate.Close()
 		stmtNotFound.Close()
-		c.Commit()
+		db.Commit()
 	}
 
 	return

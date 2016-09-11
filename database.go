@@ -2,29 +2,30 @@ package main
 
 import (
 	"bufio"
+	"database/sql"
 	"fmt"
-	"github.com/mxk/go-sqlite/sqlite3"
+	_ "github.com/mattn/go-sqlite3"
 	"os"
 	"strings"
 )
 
-// Conn wraps sqlite3.Conn
-type Conn struct {
-	*sqlite3.Conn
+// DB wraps sql.DB
+type DB struct {
+	*sql.DB
 }
 
 // Open returns a DB reference for a data source.
-func Open(dataSourceName string) (*Conn, error) {
-	c, err := sqlite3.Open(dataSourceName)
+func Open(dataSourceName string) (*DB, error) {
+	db, err := sql.Open("sqlite3", dataSourceName)
 	if err != nil {
 		return nil, err
 	}
-	return &Conn{c}, nil
+	return &DB{db}, nil
 }
 
 // Init initializes the database
-func (c *Conn) Init() error {
-	err := c.Exec(`CREATE TABLE files (
+func (db *DB) Init() error {
+	_, err := db.Exec(`CREATE TABLE files (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             filename TEXT UNIQUE,
             checksum_sha256 TEXT,
@@ -37,7 +38,7 @@ func (c *Conn) Init() error {
 		return err
 	}
 
-	err = c.Exec(`CREATE TABLE options (
+	_, err = db.Exec(`CREATE TABLE options (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             o_name TEXT UNIQUE,
             o_value TEXT
@@ -47,16 +48,16 @@ func (c *Conn) Init() error {
 	}
 
 	// tuning
-	err = c.Exec("PRAGMA synchronous=OFF")
+	_, err = db.Exec("PRAGMA synchronous=OFF")
 	checkErr(err)
-	err = c.Exec("PRAGMA journal_size_limit=-1")
+	_, err = db.Exec("PRAGMA journal_size_limit=-1")
 	checkErr(err)
 
 	return nil
 }
 
 // ChangeBasepath sets the basepath
-func ChangeBasepath(db *Conn) {
+func ChangeBasepath(db *DB) {
 	reader := bufio.NewReader(os.Stdin)
 	fmt.Println("Choose base path")
 	fmt.Print("(enter full path, without trailing slash): ")
@@ -67,8 +68,8 @@ func ChangeBasepath(db *Conn) {
 }
 
 // GetOption gets an option from db
-func (c *Conn) GetOption(key string) (val string, err error) {
-	stmt, err := c.Query("SELECT o_value FROM options WHERE o_name = ?", key)
+func (db *DB) GetOption(key string) (val string, err error) {
+	stmt, err := db.Query("SELECT o_value FROM options WHERE o_name = ?", key)
 	if err == nil {
 		var oValue string
 		err = stmt.Scan(&oValue)
@@ -81,18 +82,18 @@ func (c *Conn) GetOption(key string) (val string, err error) {
 }
 
 // SetOption sets an option value
-func (c *Conn) SetOption(key string, value string) error {
-	err := c.Exec("INSERT INTO options(o_name, o_value) VALUES(?, ?)", key, value)
+func (db *DB) SetOption(key string, value string) error {
+	_, err := db.Exec("INSERT INTO options(o_name, o_value) VALUES(?, ?)", key, value)
 	if err != nil {
-		err = c.Exec("UPDATE options SET o_value = ? WHERE o_name = ?", value, key)
+		_, err = db.Exec("UPDATE options SET o_value = ? WHERE o_name = ?", value, key)
 		checkErr(err)
 	}
 	return err
 }
 
 // GetCount returns the number of files
-func (c *Conn) GetCount(statement string) (val int, err error) {
-	stmt, err := c.Query(statement)
+func (db *DB) GetCount(statement string) (val int, err error) {
+	stmt, err := db.Query(statement)
 	if err == nil {
 		var val int
 		err = stmt.Scan(&val)
