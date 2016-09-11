@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/sha256"
+	"database/sql"
 	"encoding/hex"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3"
@@ -52,11 +53,11 @@ func InsertWorker(db *DB) {
 	basepath, err := db.GetOption("basepath")
 	checkErr(err)
 
-	err = db.Begin()
+	tx, err := db.Begin()
 	checkErr(err)
 
 	// Precompile SQL statement
-	stmt, err := db.Prepare("INSERT INTO files(filename, filesize, mtime) VALUES(?, ?, ?)")
+	stmt, err := tx.Prepare("INSERT INTO files(filename, filesize, mtime) VALUES(?, ?, ?)")
 
 	clear <- true
 
@@ -67,7 +68,7 @@ func InsertWorker(db *DB) {
 			// strip basepath
 			file.Name = strings.Replace(file.Name, basepath, "", 1)
 
-			err := stmt.Exec(file.Name, file.Size, file.Mtime)
+			_, err := stmt.Exec(file.Name, file.Size, file.Mtime)
 			if err != nil {
 				// unique constraint failed, just skip.
 			}
@@ -76,15 +77,15 @@ func InsertWorker(db *DB) {
 			// commit every 10k inserts
 			if i%10000 == 0 {
 				fmt.Println(i)
-				db.Commit()
-				err = db.Begin()
+				tx.Commit()
+				tx, err = db.Begin()
 				checkErr(err)
 			}
 
 			clear <- true
 
 		case <-commit:
-			db.Commit()
+			tx.Commit()
 			commitDone <- true
 
 		case <-exit:
@@ -127,40 +128,42 @@ func CheckFilesDB(db *DB) {
 			fmt.Println(i)
 		}
 
-		rowmap := make(sqlite3.RowMap)
-		var rows []File
-		var stmt *sqlite3.Stmt
+		var files []File
+		var rows *sql.Rows
 
-		for stmt, err = db.Query("SELECT id, filename FROM files LIMIT ?, 10000", i); err == nil; err = stmt.Next() {
-			stmt.Scan(rowmap)
-			rows = append(rows, File{ID: rowmap["id"].(int64), Name: rowmap["filename"].(string)})
+		for rows, err = db.Query("SELECT id, filename FROM files LIMIT ?, 10000", i); err == nil; rows.Next() {
+			var id int64
+			var filename string
+			rows.Scan(&id, &filename)
+			files = append(files, File{ID: id, Name: filename})
 		}
-		stmt.Close()
+		rows.Close()
+
+		tx, err := db.Begin()
 
 		// prepare update statement
-		stmt, err := db.Prepare("UPDATE files SET filesize = ?, mtime = ?, file_found = ? WHERE id = ?")
+		stmt, err := tx.Prepare("UPDATE files SET filesize = ?, mtime = ?, file_found = ? WHERE id = ?")
 		checkErr(err)
 
-		db.Begin()
-		for _, file := range rows {
+		for _, file := range files {
 			path := basepath + file.Name
 
 			f, err := os.Open(path)
 			if err != nil {
 				// file not found
-				err = stmt.Exec(nil, nil, 0, file.ID)
+				_, err = stmt.Exec(nil, nil, 0, file.ID)
 				checkErr(err)
 			} else {
 				err = GetStats(f, &file)
 				checkErr(err)
-				err = stmt.Exec(file.Size, file.Mtime, 1, file.ID)
+				_, err = stmt.Exec(file.Size, file.Mtime, 1, file.ID)
 				checkErr(err)
 			}
 			f.Close()
 		}
 
 		stmt.Close()
-		db.Commit()
+		tx.Commit()
 	}
 
 	return
