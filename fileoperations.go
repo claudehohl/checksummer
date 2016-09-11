@@ -101,14 +101,14 @@ func InsertWorker(c *Conn) {
 }
 
 // CollectFiles starts insert worker and walks through files
-func CollectFiles(db *Conn) {
+func CollectFiles(c *Conn) {
 
 	// get basepath
-	basepath, err := db.GetOption("basepath")
+	basepath, err := c.GetOption("basepath")
 	checkErr(err)
 
 	// fire up insert worker
-	go InsertWorker(db)
+	go InsertWorker(c)
 
 	// walk through files
 	err = filepath.Walk(basepath, FileInspector)
@@ -128,37 +128,39 @@ func CollectFiles(db *Conn) {
 }
 
 // CheckFilesDB collects stats for all files in database
-func CheckFilesDB(db *Conn) {
+func CheckFilesDB(c *Conn) {
 
-	// // get basepath
-	// basepath, err := db.GetOption("basepath")
-	// checkErr(err)
-
-	// // fire up insert worker
-	// go InsertWorker(db)
-
-	// walk through files
-	ustmt, err := db.Prepare("UPDATE files SET filesize = ?, mtime = ?, file_found = 1 WHERE id = ?")
+	// get basepath
+	basepath, err := c.GetOption("basepath")
 	checkErr(err)
 
-	db.Begin()
+	// walk through files
+	ustmt, err := c.Prepare("UPDATE files SET filesize = ?, mtime = ?, file_found = 1 WHERE id = ?")
+	checkErr(err)
+
+	c.Begin()
 	i := 0
-	for stmt, err := db.GetFilenames(); err == nil; err = stmt.Next() {
+	for stmt, err := c.GetFilenames(); err == nil; err = stmt.Next() {
 		var id int
 		var filename string
 		stmt.Scan(&id, &filename)
+
+		// TODO
+		path := basepath + filename
+		fmt.Println(path)
+
 		err = ustmt.Exec(33, 34, id)
 		checkErr(err)
 		i++
 
 		if i%10000 == 0 {
 			fmt.Println(i)
-			db.Commit()
-			err = db.Begin()
+			c.Commit()
+			err = c.Begin()
 			checkErr(err)
 		}
 	}
-	db.Commit()
+	c.Commit()
 
 	// // wait for clear
 	// <-clear
