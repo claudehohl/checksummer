@@ -7,6 +7,7 @@ import (
 
 // File holds the attributes
 type File struct {
+	ID       int64
 	Name     string
 	Size     int64
 	Mtime    time.Time
