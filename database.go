@@ -89,3 +89,17 @@ func (c *Conn) SetOption(key string, value string) error {
 	}
 	return err
 }
+
+// GetCount returns the number of files
+func (c *Conn) GetCount() (val int, err error) {
+	stmt, err := c.Query("SELECT count(id) FROM files")
+	if err == nil {
+		var val int
+		err = stmt.Scan(&val)
+		if err != nil {
+			return -1, err
+		}
+		return val, nil
+	}
+	return -1, err
+}

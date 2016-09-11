@@ -119,12 +119,13 @@ func CheckFilesDB(c *Conn) {
 
 	rowmap := make(sqlite3.RowMap)
 	var rows []File
-	// var rows []sqlite3.RowMap
+
+	fileCount, err := c.GetCount()
+	checkErr(err)
 
 	// sqlite dies with "unable to open database [14]" when I run two stmts concurrently
 	// therefore, we process by fetching blocks of 10000 files
-	// TODO: get files count
-	for i := 0; i < 50000; i = i + 10000 {
+	for i := 0; i < fileCount; i = i + 10000 {
 		if i >= 10000 {
 			fmt.Println(i)
 		}
