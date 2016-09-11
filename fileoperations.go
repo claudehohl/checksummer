@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 // channels
@@ -46,7 +47,11 @@ func CollectFiles(c *Conn) {
 // InsertWorker runs the statement, commits every 10k inserts
 func InsertWorker(c *Conn) {
 
-	err := c.Begin()
+	// get basepath
+	basepath, err := c.GetOption("basepath")
+	checkErr(err)
+
+	err = c.Begin()
 	checkErr(err)
 
 	// Precompile SQL statement
@@ -58,6 +63,9 @@ func InsertWorker(c *Conn) {
 	for {
 		select {
 		case file := <-insert:
+			// strip basepath
+			file.Name = strings.Replace(file.Name, basepath, "", 1)
+
 			err := stmt.Exec(file.Name, file.Size, file.Mtime)
 			if err != nil {
 				// unique constraint failed, just skip.
