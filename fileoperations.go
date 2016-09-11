@@ -131,12 +131,13 @@ func CheckFilesDB(db *DB) {
 		var files []File
 		var rows *sql.Rows
 
-		for rows, err = db.Query("SELECT id, filename FROM files LIMIT ?, 10000", i); err == nil; rows.Next() {
+		rows, err = db.Query("SELECT id, filename FROM files LIMIT ?, 10000", i)
+		checkErr(err)
+
+		for rows.Next() {
 			var id int64
 			var filename string
 			rows.Scan(&id, &filename)
-			// TODO: something is spooky here
-			fmt.Println(id)
 			files = append(files, File{ID: id, Name: filename})
 		}
 		rows.Close()
