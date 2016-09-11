@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"github.com/mxk/go-sqlite/sqlite3"
 	"io"
 	"os"
 	"path/filepath"
@@ -116,44 +117,52 @@ func CheckFilesDB(c *Conn) {
 	basepath, err := c.GetOption("basepath")
 	checkErr(err)
 
-	// prepare update statement
-	updateStmt, err := c.Prepare("UPDATE files SET filesize = ?, mtime = ?, file_found = ? WHERE id = ?")
-	checkErr(err)
+	rowmap := make(sqlite3.RowMap)
+	var rows []sqlite3.RowMap
 
-	c.Begin()
-	i := 0
-	for stmt, err := c.Query("SELECT id, filename FROM files"); err == nil; err = stmt.Next() {
-		var id int
-		var filename string
-		stmt.Scan(&id, &filename)
+	// sqlite dies with "unable to open database [14]" when I run two stmts concurrently
+	// therefore, we process by fetching blocks of 10000 files
+	for i := 0; i < 50000; i = i + 10000 {
 
-		// TODO
-		path := basepath + filename
+		var stmt *sqlite3.Stmt
 
-		file, err := os.Open(path)
-		defer file.Close()
-		if err != nil {
-			// file not found
-			err = updateStmt.Exec(nil, nil, 0, id)
-			checkErr(err)
-		} else {
-			err = updateStmt.Exec(33, 34, 1, id)
-			checkErr(err)
+		for stmt, err = c.Query("SELECT id, filename FROM files LIMIT ?, 10000", i); err == nil; err = stmt.Next() {
+			stmt.Scan(rowmap)
+			rows = append(rows, rowmap)
+		}
+		stmt.Close()
+		fmt.Println(i)
+
+		c.Begin()
+
+		// prepare update statement
+		updateStmt, err := c.Prepare("UPDATE files SET filesize = ?, mtime = ?, file_found = ? WHERE id = ?")
+		checkErr(err)
+
+		for _, row := range rows {
+			id := row["id"]
+			filename := row["filename"]
+			path := basepath + filename.(string)
+
+			file, err := os.Open(path)
+			if err != nil {
+				// file not found
+				fmt.Println("file not found")
+				err = updateStmt.Exec(nil, nil, 0, id)
+				checkErr(err)
+			} else {
+				fmt.Println("file found")
+				err = updateStmt.Exec(33, 34, 1, id)
+				checkErr(err)
+			}
+			file.Close()
 		}
 
-		i++
-
-		if i%10000 == 0 {
-			fmt.Println(i)
-			c.Commit()
-
-			updateStmt, err = c.Prepare("UPDATE files SET filesize = ?, mtime = ?, file_found = ? WHERE id = ?")
-			checkErr(err)
-			err = c.Begin()
-			checkErr(err)
-		}
+		updateStmt.Close()
+		c.Commit()
+		fmt.Println("after commit")
+		// time.Sleep(time.Second * 1)
 	}
-	c.Commit()
 
 	return
 }
