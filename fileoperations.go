@@ -208,8 +208,13 @@ func MakeChecksums(db *DB) {
 	// therefore, we process by fetching blocks of 1000 files
 	blockSize := 100
 	for i := fileCount; i > 0; i = i - blockSize {
-		var files []File
-		var rows *sql.Rows
+		var (
+			tx           *sql.Tx
+			stmtUpdate   *sql.Stmt
+			stmtNotFound *sql.Stmt
+			files        []File
+			rows         *sql.Rows
+		)
 		offset := fileCount - i + blockSize
 		if offset > fileCount {
 			offset = fileCount
@@ -229,13 +234,13 @@ func MakeChecksums(db *DB) {
 		}
 		rows.Close()
 
-		tx, err := db.Begin()
+		tx, err = db.Begin()
 		checkErr(err)
 
 		// prepare update statement
-		stmtUpdate, err := tx.Prepare("UPDATE files SET checksum_sha256 = ? WHERE id = ?")
+		stmtUpdate, err = tx.Prepare("UPDATE files SET checksum_sha256 = ? WHERE id = ?")
 		checkErr(err)
-		stmtNotFound, err := tx.Prepare("UPDATE files SET file_found = 0 WHERE id = ?")
+		stmtNotFound, err = tx.Prepare("UPDATE files SET file_found = 0 WHERE id = ?")
 		checkErr(err)
 
 		for _, file := range files {
@@ -263,6 +268,15 @@ func MakeChecksums(db *DB) {
 		stmtUpdate.Close()
 		stmtNotFound.Close()
 		tx.Commit()
+
+		tx, err = db.Begin()
+		checkErr(err)
+
+		// prepare update statement
+		stmtUpdate, err = tx.Prepare("UPDATE files SET checksum_sha256 = ? WHERE id = ?")
+		checkErr(err)
+		stmtNotFound, err = tx.Prepare("UPDATE files SET file_found = 0 WHERE id = ?")
+		checkErr(err)
 	}
 
 	return
