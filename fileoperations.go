@@ -69,6 +69,7 @@ func InsertWorker(db *DB) {
 			file.Name = strings.Replace(file.Name, basepath, "", 1)
 
 			_, err := stmt.Exec(file.Name, file.Size, file.Mtime)
+			fmt.Println(file.Name)
 			if err != nil {
 				// unique constraint failed, just skip.
 			}
@@ -120,6 +121,7 @@ func CheckFilesDB(db *DB) {
 
 	fileCount, err := db.GetCount("SELECT count(id) FROM files")
 	checkErr(err)
+	fmt.Println(fileCount)
 
 	// sqlite dies with "unable to open database [14]" when I run two stmts concurrently
 	// therefore, we process by fetching blocks of 10000 files
@@ -142,6 +144,7 @@ func CheckFilesDB(db *DB) {
 		rows.Close()
 
 		tx, err := db.Begin()
+		checkErr(err)
 
 		// prepare update statement
 		stmt, err := tx.Prepare("UPDATE files SET filesize = ?, mtime = ?, file_found = ? WHERE id = ?")
@@ -215,6 +218,7 @@ func MakeChecksums(db *DB) {
 		rows.Close()
 
 		tx, err := db.Begin()
+		checkErr(err)
 
 		// prepare update statement
 		stmtUpdate, err := tx.Prepare("UPDATE files SET checksum_sha256 = ? WHERE id = ?")
