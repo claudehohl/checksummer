@@ -129,9 +129,8 @@ func CheckFilesDB(db *DB) {
 		}
 
 		var files []File
-		var rows *sql.Rows
 
-		rows, err = db.Query("SELECT id, filename FROM files LIMIT ?, 10000", i)
+		rows, err := db.Query("SELECT id, filename FROM files LIMIT ?, 10000", i)
 		checkErr(err)
 
 		for rows.Next() {
@@ -203,7 +202,10 @@ func MakeChecksums(db *DB) {
 		fmt.Println("offset:", offset)
 		remaining := i
 
-		for rows, err = db.Query("SELECT id, filename, filesize FROM files WHERE checksum_sha256 IS NULL AND file_found = '1' LIMIT ?, ?", offset, 100); err == nil; rows.Next() {
+		rows, err = db.Query("SELECT id, filename, filesize FROM files WHERE checksum_sha256 IS NULL AND file_found = '1' LIMIT ?, ?", offset, blockSize)
+		checkErr(err)
+
+		for rows.Next() {
 			var id int64
 			var filename string
 			var filesize int64
