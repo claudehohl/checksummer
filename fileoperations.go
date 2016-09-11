@@ -117,7 +117,7 @@ func CheckFilesDB(c *Conn) {
 	basepath, err := c.GetOption("basepath")
 	checkErr(err)
 
-	fileCount, err := c.GetCount()
+	fileCount, err := c.GetCount("SELECT count(id) FROM files")
 	checkErr(err)
 
 	// sqlite dies with "unable to open database [14]" when I run two stmts concurrently
@@ -181,13 +181,13 @@ func MakeChecksums(c *Conn) {
 	basepath, err := c.GetOption("basepath")
 	checkErr(err)
 
-	fileCount, err := c.GetCount()
+	fileCount, err := c.GetCount("SELECT count(id) FROM files WHERE checksum_sha256 IS NULL AND file_found = '1'")
 	checkErr(err)
 
 	// sqlite dies with "unable to open database [14]" when I run two stmts concurrently
 	// therefore, we process by fetching blocks of 10000 files
-	for i := 0; i < fileCount; i = i + 10000 {
-		if i >= 10000 {
+	for i := 0; i < fileCount; i = i + 1000 {
+		if i >= 1000 {
 			fmt.Println(i)
 		}
 
@@ -195,7 +195,7 @@ func MakeChecksums(c *Conn) {
 		var rows []File
 		var stmt *sqlite3.Stmt
 
-		for stmt, err = c.Query("SELECT id, filename, filesize FROM files WHERE checksum_sha256 IS NULL AND file_found = '1'"); err == nil; err = stmt.Next() {
+		for stmt, err = c.Query("SELECT id, filename, filesize FROM files WHERE checksum_sha256 IS NULL AND file_found = '1' LIMIT ?, 1000", i); err == nil; err = stmt.Next() {
 			stmt.Scan(rowmap)
 			rows = append(rows, File{ID: rowmap["id"].(int64), Name: rowmap["filename"].(string), Size: rowmap["filesize"].(int64)})
 		}
@@ -211,6 +211,8 @@ func MakeChecksums(c *Conn) {
 		for _, file := range rows {
 			path := basepath + file.Name
 
+			fmt.Printf("making checksum: %s (%d)... ", path, file.Size)
+
 			f, err := os.Open(path)
 			if err != nil {
 				// file not found
@@ -223,6 +225,8 @@ func MakeChecksums(c *Conn) {
 				checkErr(err)
 			}
 			f.Close()
+
+			fmt.Println("OK")
 		}
 
 		stmt.Close()
