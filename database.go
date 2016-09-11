@@ -94,10 +94,11 @@ func (db *DB) SetOption(key string, value string) error {
 
 // GetCount returns the number of files
 func (db *DB) GetCount(statement string) (val int, err error) {
-	stmt, err := db.Query(statement)
+	rows, err := db.Query(statement)
 	if err == nil {
+		rows.Next()
 		var val int
-		err = stmt.Scan(&val)
+		err = rows.Scan(&val)
 		if err != nil {
 			return -1, err
 		}

@@ -135,6 +135,8 @@ func CheckFilesDB(db *DB) {
 			var id int64
 			var filename string
 			rows.Scan(&id, &filename)
+			// TODO: something is spooky here
+			fmt.Println(id)
 			files = append(files, File{ID: id, Name: filename})
 		}
 		rows.Close()
