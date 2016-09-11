@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"errors"
 	"fmt"
 	"github.com/mxk/go-sqlite/sqlite3"
 	"os"
@@ -89,44 +88,4 @@ func (c *Conn) SetOption(key string, value string) error {
 		checkErr(err)
 	}
 	return err
-}
-
-// PrepareInsert precompiles insert statement
-func (c *Conn) PrepareInsert() (*sqlite3.Stmt, error) {
-	stmt, err := c.Prepare(`INSERT INTO files(filename, filesize, mtime) VALUES(?, ?, ?)`)
-	return stmt, err
-}
-
-// InsertFilename inserts a filename
-func (c *Conn) InsertFilename(f *File, stmt *sqlite3.Stmt) error {
-	// Validate the input.
-	if f == nil {
-		return errors.New("file required")
-	} else if f.Name == "" {
-		return errors.New("name required")
-	} else if f.Size == -1 {
-		return errors.New("size required")
-	}
-
-	// Perform the actual insert and return any errors.
-	err := stmt.Exec(f.Name, f.Size, f.Mtime)
-	return err
-}
-
-// GetFilenames fetches all filenames
-func (c *Conn) GetFilenames() (stmt *sqlite3.Stmt, err error) {
-
-	stmt, err = c.Query("SELECT id, filename FROM files")
-	return stmt, err
-
-	// for stmt, err := c.Query("SELECT id, filename FROM files"); err == nil; err = stmt.Next() {
-	// 	var id int
-	// 	var filename string
-	// 	stmt.Scan(&id, &filename)
-	// 	// fmt.Println(filename)
-	// 	filenames = append(filenames, filename)
-	// }
-	// return filenames, nil
-
-	// return []string{}, nil
 }

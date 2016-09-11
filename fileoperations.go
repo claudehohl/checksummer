@@ -16,90 +16,6 @@ var commit = make(chan bool)
 var commitDone = make(chan bool)
 var exit = make(chan bool)
 
-// FileInspector is the WalkFn, passes path into the insert channel
-func FileInspector(path string, info os.FileInfo, err error) error {
-	// skip nonregular files
-	if info.Mode().IsRegular() == false {
-		return nil
-	}
-
-	file, err := os.Open(path)
-	if err != nil {
-		fmt.Printf("File not found: %s", path)
-	}
-	defer file.Close()
-
-	// spew.Dump(info)
-
-	// wait for clear
-	<-clear
-
-	insert <- File{Name: path, Size: info.Size(), Mtime: info.ModTime()}
-
-	return nil
-}
-
-// HashFile takes a path and returns a hash
-func HashFile(path string) (hash string, err error) {
-	file, err := os.Open(path)
-	if err != nil {
-		return "", err
-		// fmt.Printf("File not found: %s", path)
-	}
-	defer file.Close()
-
-	hasher := sha256.New()
-	_, err = io.Copy(hasher, file)
-	if err != nil {
-		return "", err
-	}
-
-	hash = hex.EncodeToString(hasher.Sum(nil))
-	fmt.Printf(" %v\n", hash)
-
-	return hash, nil
-}
-
-// InsertWorker runs the statement, commits every 10k inserts
-func InsertWorker(c *Conn) {
-	err := c.Begin()
-	checkErr(err)
-
-	// Precompile SQL statement
-	stmt, err := c.PrepareInsert()
-
-	clear <- true
-
-	i := 0
-	for {
-		select {
-		case filename := <-insert:
-			err := c.InsertFilename(&filename, stmt)
-			if err != nil {
-				// unique constraint failed, just skip.
-			}
-			i++
-
-			// commit every 10k inserts
-			if i%10000 == 0 {
-				fmt.Println(i)
-				c.Commit()
-				err = c.Begin()
-				checkErr(err)
-			}
-
-			clear <- true
-
-		case <-commit:
-			c.Commit()
-			commitDone <- true
-
-		case <-exit:
-			return
-		}
-	}
-}
-
 // CollectFiles starts insert worker and walks through files
 func CollectFiles(c *Conn) {
 
@@ -127,6 +43,69 @@ func CollectFiles(c *Conn) {
 	exit <- true
 }
 
+// InsertWorker runs the statement, commits every 10k inserts
+func InsertWorker(c *Conn) {
+
+	err := c.Begin()
+	checkErr(err)
+
+	// Precompile SQL statement
+	stmt, err := c.Prepare("INSERT INTO files(filename, filesize, mtime) VALUES(?, ?, ?)")
+
+	clear <- true
+
+	i := 0
+	for {
+		select {
+		case file := <-insert:
+			err := stmt.Exec(file.Name, file.Size, file.Mtime)
+			if err != nil {
+				// unique constraint failed, just skip.
+			}
+			i++
+
+			// commit every 10k inserts
+			if i%10000 == 0 {
+				fmt.Println(i)
+				c.Commit()
+				err = c.Begin()
+				checkErr(err)
+			}
+
+			clear <- true
+
+		case <-commit:
+			c.Commit()
+			commitDone <- true
+
+		case <-exit:
+			return
+		}
+	}
+}
+
+// FileInspector is the WalkFn, passes path into the insert channel
+func FileInspector(path string, info os.FileInfo, err error) error {
+
+	// skip nonregular files
+	if info.Mode().IsRegular() == false {
+		return nil
+	}
+
+	file, err := os.Open(path)
+	if err != nil {
+		fmt.Printf("File not found: %s", path)
+	}
+	defer file.Close()
+
+	// wait for clear
+	<-clear
+
+	insert <- File{Name: path, Size: info.Size(), Mtime: info.ModTime()}
+
+	return nil
+}
+
 // CheckFilesDB collects stats for all files in database
 func CheckFilesDB(c *Conn) {
 
@@ -140,7 +119,7 @@ func CheckFilesDB(c *Conn) {
 
 	c.Begin()
 	i := 0
-	for stmt, err := c.GetFilenames(); err == nil; err = stmt.Next() {
+	for stmt, err := c.Query("SELECT id, filename FROM files"); err == nil; err = stmt.Next() {
 		var id int
 		var filename string
 		stmt.Scan(&id, &filename)
@@ -162,17 +141,27 @@ func CheckFilesDB(c *Conn) {
 	}
 	c.Commit()
 
-	// // wait for clear
-	// <-clear
-
-	// // final commit
-	// commit <- true
-
-	// // wait for commit
-	// <-commitDone
-
-	// // terminate InsertWorker
-	// exit <- true
-
 	return
+}
+
+// HashFile takes a path and returns a hash
+func HashFile(path string) (hash string, err error) {
+
+	file, err := os.Open(path)
+	if err != nil {
+		return "", err
+		// fmt.Printf("File not found: %s", path)
+	}
+	defer file.Close()
+
+	hasher := sha256.New()
+	_, err = io.Copy(hasher, file)
+	if err != nil {
+		return "", err
+	}
+
+	hash = hex.EncodeToString(hasher.Sum(nil))
+	fmt.Printf(" %v\n", hash)
+
+	return hash, nil
 }
