@@ -244,6 +244,10 @@ func MakeChecksums(db *DB) {
 	var totalSize int64
 	totalSize = int64(ts)
 
+	// dynamically calculate blocksize.
+	// lots of small files = large blocksize (10000)
+	// huge, few files = small blocksize (100)
+	// this is relevant because the commit happens after each block
 	fileSizePerCount := float32(totalSize) / float32(fileCount)
 	bs := 10000.0 / fileSizePerCount * 50000
 	blockSize := int(bs)
