@@ -92,7 +92,7 @@ func InsertWorker(db *DB) {
 				checkErr(err)
 
 				// Precompile SQL statement
-				stmt, err = tx.Prepare("INSERT INTO files(filename, filesize, mtime) VALUES(?, ?, ?)")
+				stmt, err = tx.Prepare("INSERT INTO files(filename, filesize, mtime, file_found) VALUES(?, ?, ?, 1)")
 				checkErr(err)
 			}
 
