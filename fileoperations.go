@@ -156,6 +156,7 @@ func InsertFileInspector(path string, info os.FileInfo, err error) error {
 
 	if err != nil {
 		fmt.Println(err)
+		return nil // actually not true, but we just wanna skip the file.
 	}
 
 	// skip nonregular files
