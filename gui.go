@@ -15,7 +15,7 @@ func LaunchGUI(db *DB) {
 	basepath, err := db.GetOption("basepath")
 	checkErr(err)
 
-	fmt.Println("Checksummer v3.0.0-dev91 - filesystem intelligence")
+	fmt.Println("Checksummer v3.0.0-dev100 - filesystem intelligence")
 	fmt.Println("")
 	fmt.Println("basepath is:", basepath)
 	fmt.Println("total size: ")
