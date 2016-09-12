@@ -204,10 +204,12 @@ func MakeChecksums(db *DB) {
 	fileCount, err := db.GetCount("SELECT count(id) FROM files WHERE checksum_sha256 IS NULL AND file_found = '1'")
 	checkErr(err)
 
+	fmt.Println("filecount:", fileCount)
+
 	// sqlite dies with "unable to open database [14]" when I run two stmts concurrently
 	// therefore, we process by fetching blocks of 1000 files
-	blockSize := 100
-	for i := fileCount; i > 0; i = i - blockSize {
+	blockSize := 1000
+	for i := fileCount + blockSize; i > 0; i = i - blockSize {
 		var (
 			tx           *sql.Tx
 			stmtUpdate   *sql.Stmt
@@ -215,15 +217,14 @@ func MakeChecksums(db *DB) {
 			files        []File
 			rows         *sql.Rows
 		)
-		offset := fileCount - i + blockSize
-		if offset > fileCount {
-			offset = fileCount
-		}
-		fmt.Println("offset:", offset)
 		remaining := i
 
-		rows, err = db.Query("SELECT id, filename, filesize FROM files WHERE checksum_sha256 IS NULL AND file_found = '1' LIMIT ?, ?", offset, blockSize)
+		rows, err = db.Query("SELECT id, filename, filesize FROM files WHERE checksum_sha256 IS NULL AND file_found = '1' LIMIT ?", blockSize)
 		checkErr(err)
+
+		// fmt.Printf("fileCount: %v, blockSize: %v, i: %v, remaining: %v\n", fileCount, blockSize, i, remaining)
+		// fmt.Printf("SELECT id, filename, filesize FROM files WHERE checksum_sha256 IS NULL AND file_found = '1' LIMIT %v\n", blockSize)
+		// time.Sleep(time.Second * 5)
 
 		for rows.Next() {
 			var id int64
