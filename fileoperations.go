@@ -239,13 +239,17 @@ func MakeChecksums(db *DB) {
 	checkErr(err)
 
 	fileCount, err := db.GetCount("SELECT count(id) FROM files WHERE checksum_sha256 IS NULL AND file_found = '1'")
+	ts, err := db.GetCount("SELECT sum(filesize) FROM files WHERE checksum_sha256 IS NULL AND file_found = '1'")
 	checkErr(err)
+	var totalSize int64
+	totalSize = int64(ts)
 
-	fmt.Println("filecount:", fileCount)
+	fileSizePerCount := float32(totalSize) / float32(fileCount)
+	bs := 10000.0 / fileSizePerCount * 50000
+	blockSize := int(bs)
 
 	// sqlite dies with "unable to open database [14]" when I run two stmts concurrently
-	// therefore, we process by fetching blocks of 1000 files
-	blockSize := 1000
+	// therefore, we process by fetching blocks of files
 	for i := fileCount + blockSize; i > 0; i = i - blockSize {
 		var (
 			tx           *sql.Tx
@@ -280,7 +284,7 @@ func MakeChecksums(db *DB) {
 		for _, file := range files {
 			path := basepath + file.Name
 
-			fmt.Printf("(%d) making checksum: %s (%s)... ", remaining, path, ByteSize(file.Size))
+			fmt.Printf("(%d, %s) making checksum: %s (%s)... ", remaining, ByteSize(totalSize), path, ByteSize(file.Size))
 
 			f, err := os.Open(path)
 			if err != nil {
@@ -297,6 +301,7 @@ func MakeChecksums(db *DB) {
 
 			fmt.Println("OK")
 			remaining--
+			totalSize = totalSize - file.Size
 		}
 
 		stmtUpdate.Close()
