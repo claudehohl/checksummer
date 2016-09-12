@@ -222,10 +222,6 @@ func MakeChecksums(db *DB) {
 		rows, err = db.Query("SELECT id, filename, filesize FROM files WHERE checksum_sha256 IS NULL AND file_found = '1' LIMIT ?", blockSize)
 		checkErr(err)
 
-		// fmt.Printf("fileCount: %v, blockSize: %v, i: %v, remaining: %v\n", fileCount, blockSize, i, remaining)
-		// fmt.Printf("SELECT id, filename, filesize FROM files WHERE checksum_sha256 IS NULL AND file_found = '1' LIMIT %v\n", blockSize)
-		// time.Sleep(time.Second * 5)
-
 		for rows.Next() {
 			var id int64
 			var filename string
