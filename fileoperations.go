@@ -155,7 +155,7 @@ func InsertFileInspector(path string, info os.FileInfo, err error) error {
 	// fileoperations.go:152
 
 	if err != nil {
-		return err
+		fmt.Println(err)
 	}
 
 	// skip nonregular files
