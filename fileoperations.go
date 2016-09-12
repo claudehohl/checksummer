@@ -154,6 +154,10 @@ func InsertFileInspector(path string, info os.FileInfo, err error) error {
 	// main.InsertFileInspector(0xc820382540, 0x32, 0x0, 0x0, 0x7fef5f60b380, 0xc820159e60, 0x0, 0x0)
 	// fileoperations.go:152
 
+	if err != nil {
+		return err
+	}
+
 	// skip nonregular files
 	if info.Mode().IsRegular() == false {
 		return nil
