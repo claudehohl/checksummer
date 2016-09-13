@@ -63,33 +63,6 @@ func CollectFiles(db *DB) {
 	basepath, err := db.GetOption("basepath")
 	checkErr(err)
 
-	// fire up insert worker
-	go InsertWorker(db)
-
-	// walk through files
-	err = filepath.Walk(basepath, InsertFileInspector)
-	checkErr(err)
-
-	// wait for clear
-	<-clear
-
-	// final commit
-	commit <- true
-
-	// wait for commit
-	<-commitDone
-
-	// terminate InsertWorker
-	exit <- true
-}
-
-// InsertWorker runs the statement, commits every 10k inserts
-func InsertWorker(db *DB) {
-
-	// get basepath
-	basepath, err := db.GetOption("basepath")
-	checkErr(err)
-
 	var tx *sql.Tx
 	var stmt *sql.Stmt
 
@@ -97,80 +70,61 @@ func InsertWorker(db *DB) {
 	checkErr(err)
 
 	// Precompile SQL statement
-	stmt, err = tx.Prepare("INSERT INTO files(filename, filesize, mtime, file_found) VALUES(?, ?, ?, 1)")
+	insertStatement := "INSERT INTO files(filename, filesize, mtime, file_found) VALUES(?, ?, ?, 1)"
+	stmt, err = tx.Prepare(insertStatement)
 	checkErr(err)
 
-	clear <- true
-
 	i := 0
-	for {
-		select {
-		case file := <-insert:
-			// strip basepath
-			file.Name = strings.Replace(file.Name, basepath, "", 1)
+	err = filepath.Walk(basepath, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			fmt.Println(err)
+			return nil // actually not true, but we just wanna skip the file.
+		}
 
-			_, err := stmt.Exec(file.Name, file.Size, file.Mtime)
-			if err != nil {
-				// unique constraint failed, just skip.
-			}
-			i++
+		// skip nonregular files
+		if info.Mode().IsRegular() == false {
+			return nil
+		}
 
-			// commit every 10k inserts
-			if i%10000 == 0 {
-				fmt.Println(i)
-				err = stmt.Close()
-				checkErr(err)
-				err = tx.Commit()
-				checkErr(err)
+		// pass fileinfo to the insert channel
+		file := File{Name: path, Size: info.Size(), Mtime: info.ModTime()}
 
-				// well. sql closes the connection after Commit(), unlike in python.
-				// so we have to reopen it again.
-				// what a special hack'n'bang, all because WalkFn doesn't accept parameters... -.-
+		file.Name = strings.Replace(file.Name, basepath, "", 1)
 
-				tx, err = db.Begin()
-				checkErr(err)
+		_, err = stmt.Exec(file.Name, file.Size, file.Mtime)
+		if err != nil {
+			// unique constraint failed, just skip.
+		}
+		i++
 
-				// Precompile SQL statement
-				stmt, err = tx.Prepare("INSERT INTO files(filename, filesize, mtime, file_found) VALUES(?, ?, ?, 1)")
-				checkErr(err)
-
-			}
-
-			clear <- true
-
-		case <-commit:
+		// commit every 10k inserts
+		if i%10000 == 0 {
+			fmt.Println(i)
 			err = stmt.Close()
 			checkErr(err)
 			err = tx.Commit()
 			checkErr(err)
-			commitDone <- true
 
-		case <-exit:
-			return
+			// well. sql closes the connection after Commit(), unlike in python.
+			// so we have to reopen it again.
+
+			tx, err = db.Begin()
+			checkErr(err)
+
+			// Precompile SQL statement
+			stmt, err = tx.Prepare(insertStatement)
+			checkErr(err)
 		}
-	}
-}
 
-// InsertFileInspector is the WalkFn, passes path into the insert channel
-func InsertFileInspector(path string, info os.FileInfo, err error) error {
-
-	if err != nil {
-		fmt.Println(err)
-		return nil // actually not true, but we just wanna skip the file.
-	}
-
-	// skip nonregular files
-	if info.Mode().IsRegular() == false {
 		return nil
-	}
+	})
+	checkErr(err)
 
-	// wait for clear
-	<-clear
-
-	// pass fileinfo to the insert channel
-	insert <- File{Name: path, Size: info.Size(), Mtime: info.ModTime()}
-
-	return nil
+	// final commit
+	err = stmt.Close()
+	checkErr(err)
+	err = tx.Commit()
+	checkErr(err)
 }
 
 // CheckFilesDB collects stats for all files in database
@@ -220,7 +174,9 @@ func CheckFilesDB(db *DB) {
 				_, err = stmt.Exec(nil, nil, 0, file.ID)
 				checkErr(err)
 			} else {
-				err = GetStats(f, &file)
+				fi, err := f.Stat()
+				file.Size = fi.Size()
+				file.Mtime = fi.ModTime()
 				checkErr(err)
 				_, err = stmt.Exec(file.Size, file.Mtime, 1, file.ID)
 				checkErr(err)
@@ -233,14 +189,6 @@ func CheckFilesDB(db *DB) {
 	}
 
 	return
-}
-
-// GetStats populates File with os.FileInfo stats
-func GetStats(f *os.File, file *File) error {
-	fi, err := f.Stat()
-	file.Size = fi.Size()
-	file.Mtime = fi.ModTime()
-	return err
 }
 
 // MakeChecksums makes checksums of all files
