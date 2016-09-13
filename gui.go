@@ -3,7 +3,9 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"os"
+	"os/exec"
 	"strings"
 )
 
@@ -26,7 +28,7 @@ func LaunchGUI(db *DB) {
 	}
 	totalSize := ByteSize(ts)
 
-	fmt.Println("Checksummer v3.0.0-dev109 - filesystem intelligence")
+	fmt.Println("Checksummer v3.0.0-dev112 - filesystem intelligence")
 	fmt.Println("")
 	fmt.Println("basepath is:", basepath)
 	fmt.Println("total size: ", totalSize)
@@ -82,4 +84,40 @@ func LaunchGUI(db *DB) {
 
 func clearScreen() {
 	fmt.Print("\033[H\033[2J")
+}
+
+func pager(str string, autoQuit bool) {
+
+	var cmd *exec.Cmd
+
+	if autoQuit {
+		cmd = exec.Command("less", "-X", "--quit-if-one-screen")
+	} else {
+		cmd = exec.Command("less", "-X")
+	}
+
+	// create a pipe (blocking)
+	r, stdin := io.Pipe()
+
+	// Set your i/o's
+	cmd.Stdin = r
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	// Create a blocking chan, Run the pager and unblock once it is finished
+	c := make(chan struct{})
+	go func() {
+		defer close(c)
+		cmd.Run()
+	}()
+
+	// Pass anything to your pipe
+	fmt.Fprintf(stdin, str)
+
+	// Close stdin (result in pager to exit)
+	stdin.Close()
+
+	// Wait for the pager to be finished
+	<-c
+
 }
