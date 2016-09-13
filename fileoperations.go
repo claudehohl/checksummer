@@ -118,8 +118,10 @@ func InsertWorker(db *DB) {
 			// commit every 10k inserts
 			if i%10000 == 0 {
 				fmt.Println(i)
-				stmt.Close()
-				tx.Commit()
+				err = stmt.Close()
+				checkErr(err)
+				err = tx.Commit()
+				checkErr(err)
 
 				// well. sql closes the connection after Commit(), unlike in python.
 				// so we have to reopen it again.
@@ -131,12 +133,16 @@ func InsertWorker(db *DB) {
 				// Precompile SQL statement
 				stmt, err = tx.Prepare("INSERT INTO files(filename, filesize, mtime, file_found) VALUES(?, ?, ?, 1)")
 				checkErr(err)
+
 			}
 
 			clear <- true
 
 		case <-commit:
-			tx.Commit()
+			err = stmt.Close()
+			checkErr(err)
+			err = tx.Commit()
+			checkErr(err)
 			commitDone <- true
 
 		case <-exit:
@@ -187,6 +193,7 @@ func CheckFilesDB(db *DB) {
 		var files []File
 
 		rows, err := db.Query("SELECT id, filename FROM files LIMIT ?, 10000", i)
+		defer rows.Close()
 		checkErr(err)
 
 		for rows.Next() {
@@ -270,6 +277,7 @@ func MakeChecksums(db *DB) {
 		remaining := i
 
 		rows, err = db.Query("SELECT id, filename, filesize FROM files WHERE checksum_sha256 IS NULL AND file_found = '1' LIMIT ?", blockSize)
+		defer rows.Close()
 		checkErr(err)
 
 		for rows.Next() {

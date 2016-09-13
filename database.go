@@ -70,6 +70,7 @@ func ChangeBasepath(db *DB) {
 // GetOption gets an option from db
 func (db *DB) GetOption(key string) (val string, err error) {
 	rows, err := db.Query("SELECT o_value FROM options WHERE o_name = ?", key)
+	defer rows.Close()
 	if err == nil {
 		rows.Next()
 		var oValue string
@@ -95,6 +96,7 @@ func (db *DB) SetOption(key string, value string) error {
 // GetCount returns the number of files
 func (db *DB) GetCount(statement string) (val int, err error) {
 	rows, err := db.Query(statement)
+	defer rows.Close()
 	if err == nil {
 		rows.Next()
 		var val int
@@ -110,6 +112,7 @@ func (db *DB) GetCount(statement string) (val int, err error) {
 // RankFilesize returns a list of files, ordered by filesize
 func (db *DB) RankFilesize() (files []File, err error) {
 	rows, err := db.Query("SELECT filename, filesize FROM files WHERE filesize IS NOT NULL ORDER BY filesize DESC")
+	defer rows.Close()
 	if err == nil {
 		rows.Next()
 		var filename string

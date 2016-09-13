@@ -28,7 +28,7 @@ func LaunchGUI(db *DB) {
 	}
 	totalSize := ByteSize(ts)
 
-	fmt.Println("Checksummer v3.0.0-dev112 - filesystem intelligence")
+	fmt.Println("Checksummer v3.0.0-dev118 - filesystem intelligence")
 	fmt.Println("")
 	fmt.Println("basepath is:", basepath)
 	fmt.Println("total size: ", totalSize)
