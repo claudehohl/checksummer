@@ -15,21 +15,32 @@ func LaunchGUI(db *DB) {
 	basepath, err := db.GetOption("basepath")
 	checkErr(err)
 
-	fmt.Println("Checksummer v3.0.0-dev100 - filesystem intelligence")
+	filesInDB, err := db.GetCount("SELECT id FROM files LIMIT 1")
+	checkErr(err)
+
+	ts, err := db.GetCount("SELECT sum(filesize) FROM files")
+	checkErr(err)
+	totalSize := ByteSize(ts)
+
+	fmt.Println("Checksummer v3.0.0-dev109 - filesystem intelligence")
 	fmt.Println("")
 	fmt.Println("basepath is:", basepath)
-	fmt.Println("total size: ")
+	fmt.Println("total size: ", totalSize)
 	fmt.Println("")
 	fmt.Println("=== Collection ===")
 	fmt.Println("[cf] collect files")
-	fmt.Println("[cd] check files in database")
-	fmt.Println("[mc] make checksums")
-	// fmt.Println("[rc] reindex & check all files")
-	// fmt.Println("")
-	// fmt.Println("=== Analysis ===")
-	// fmt.Println("[s] search files")
-	// fmt.Println("[r] rank by filesize")
-	// fmt.Println("[m] recently modified files")
+	if filesInDB > 0 {
+		fmt.Println("[cd] check files in database")
+		fmt.Println("[mc] make checksums")
+		// fmt.Println("[rc] reindex & check all files")
+	}
+	fmt.Println("")
+	fmt.Println("=== Analysis ===")
+	if filesInDB > 0 {
+		fmt.Println("[s] search files")
+		fmt.Println("[r] rank by filesize")
+		// fmt.Println("[m] recently modified files")
+	}
 	// fmt.Println("[ld] list duplicate files")
 	// fmt.Println("[d] show X deleted files")
 	// fmt.Println("[pd] prune deleted files")
@@ -55,6 +66,8 @@ func LaunchGUI(db *DB) {
 		ChangeBasepath(db)
 	case "mc":
 		MakeChecksums(db)
+	case "r":
+		db.RankFilesize()
 	case "q":
 		return
 	}
