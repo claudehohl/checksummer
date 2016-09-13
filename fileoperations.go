@@ -97,7 +97,7 @@ func CollectFiles(db *DB) {
 		}
 		i++
 
-		// commit every 10k inserts
+		// commit every 10k files
 		if i%10000 == 0 {
 			fmt.Println(i)
 			err = stmt.Close()
