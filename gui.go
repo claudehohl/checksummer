@@ -16,10 +16,14 @@ func LaunchGUI(db *DB) {
 	checkErr(err)
 
 	filesInDB, err := db.GetCount("SELECT id FROM files LIMIT 1")
-	checkErr(err)
+	if err != nil {
+		filesInDB = 0
+	}
 
 	ts, err := db.GetCount("SELECT sum(filesize) FROM files")
-	checkErr(err)
+	if err != nil {
+		ts = 0
+	}
 	totalSize := ByteSize(ts)
 
 	fmt.Println("Checksummer v3.0.0-dev109 - filesystem intelligence")
