@@ -86,9 +86,10 @@ func CollectFiles(db *DB) {
 			return nil
 		}
 
-		// pass fileinfo to the insert channel
+		// populate the file
 		file := File{Name: path, Size: info.Size(), Mtime: info.ModTime()}
 
+		// strip basepath
 		file.Name = strings.Replace(file.Name, basepath, "", 1)
 
 		_, err = stmt.Exec(file.Name, file.Size, file.Mtime)
