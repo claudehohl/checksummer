@@ -45,7 +45,7 @@ func LaunchGUI(db *DB) {
 	if filesInDB > 0 {
 		fmt.Println("[s] search files")
 		fmt.Println("[r] rank by filesize")
-		// fmt.Println("[m] recently modified files")
+		fmt.Println("[m] recently modified files")
 	}
 	// fmt.Println("[ld] list duplicate files")
 	// fmt.Println("[d] show X deleted files")
@@ -74,6 +74,8 @@ func LaunchGUI(db *DB) {
 		MakeChecksums(db)
 	case "r":
 		db.RankFilesize()
+	case "m":
+		db.RankModified()
 	case "q":
 		return
 	}
@@ -83,7 +85,7 @@ func LaunchGUI(db *DB) {
 }
 
 func clearScreen() {
-	fmt.Print("\033[H\033[2J")
+	// fmt.Print("\033[H\033[2J")
 }
 
 func pager(str string, autoQuit bool) {

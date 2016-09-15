@@ -7,6 +7,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"os"
 	"strings"
+	"time"
 )
 
 // DB wraps sql.DB
@@ -123,6 +124,28 @@ func (db *DB) RankFilesize() (err error) {
 				return err
 			}
 			files = files + fmt.Sprintf("%v\t%v\n", ByteSize(filesize), filename)
+		}
+		pager(files, false)
+		return nil
+	}
+	return err
+}
+
+// RankModified returns a list of files, ordered by modified date
+func (db *DB) RankModified() (err error) {
+	var files string
+	rows, err := db.Query("SELECT filename, filesize, mtime FROM files WHERE file_found = '1' ORDER BY mtime DESC")
+	defer rows.Close()
+	if err == nil {
+		for rows.Next() {
+			var filename string
+			var filesize int64
+			var date time.Time
+			err = rows.Scan(&filename, &filesize, &date)
+			if err != nil {
+				return err
+			}
+			files = files + fmt.Sprintf("%v\t%v\t%v\n", date, ByteSize(filesize), filename)
 		}
 		pager(files, false)
 		return nil
