@@ -110,20 +110,22 @@ func (db *DB) GetCount(statement string) (val int, err error) {
 }
 
 // RankFilesize returns a list of files, ordered by filesize
-func (db *DB) RankFilesize() (files []File, err error) {
+func (db *DB) RankFilesize() (err error) {
+	var files string
 	rows, err := db.Query("SELECT filename, filesize FROM files WHERE filesize IS NOT NULL ORDER BY filesize DESC")
 	defer rows.Close()
 	if err == nil {
-		rows.Next()
-		var filename string
-		var filesize int64
-		err = rows.Scan(&filename, &filesize)
-		if err != nil {
-			return []File{}, err
+		for rows.Next() {
+			var filename string
+			var filesize int64
+			err = rows.Scan(&filename, &filesize)
+			if err != nil {
+				return err
+			}
+			files = files + fmt.Sprintf("%v\t%v\n", ByteSize(filesize), filename)
 		}
-		files = append(files, File{Name: filename, Size: filesize})
-		fmt.Println(files)
-		return files, nil
+		pager(files, false)
+		return nil
 	}
-	return []File{}, err
+	return err
 }
