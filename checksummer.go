@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"time"
 )
 
 // File holds the attributes
@@ -10,7 +9,7 @@ type File struct {
 	ID       int64
 	Name     string
 	Size     int64
-	Mtime    time.Time
+	Mtime    int64
 	Checksum string
 }
 

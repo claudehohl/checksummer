@@ -12,13 +12,6 @@ import (
 	"strings"
 )
 
-// channels
-var insert = make(chan File)
-var clear = make(chan bool)
-var commit = make(chan bool)
-var commitDone = make(chan bool)
-var exit = make(chan bool)
-
 // ByteSize displays bytes in human-readable format
 type ByteSize float64
 
@@ -87,7 +80,7 @@ func CollectFiles(db *DB) {
 		}
 
 		// populate the file
-		file := File{Name: path, Size: info.Size(), Mtime: info.ModTime()}
+		file := File{Name: path, Size: info.Size(), Mtime: info.ModTime().Unix()}
 
 		// strip basepath
 		file.Name = strings.Replace(file.Name, basepath, "", 1)
@@ -177,7 +170,7 @@ func CheckFilesDB(db *DB) {
 			} else {
 				fi, err := f.Stat()
 				file.Size = fi.Size()
-				file.Mtime = fi.ModTime()
+				file.Mtime = fi.ModTime().Unix()
 				checkErr(err)
 				_, err = stmt.Exec(file.Size, file.Mtime, 1, file.ID)
 				checkErr(err)
