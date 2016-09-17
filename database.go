@@ -58,14 +58,14 @@ func (db *DB) Init() error {
 }
 
 // ChangeBasepath sets the basepath
-func ChangeBasepath(db *DB) {
+func ChangeBasepath(db *DB) error {
 	reader := bufio.NewReader(os.Stdin)
 	fmt.Println("Choose base path")
 	fmt.Print("(enter full path, without trailing slash): ")
 	basepath, _ := reader.ReadString('\n')
 	basepath = strings.Trim(basepath, "\n")
 	err := db.SetOption("basepath", basepath)
-	checkErr(err)
+	return err
 }
 
 // GetOption gets an option from db
@@ -111,7 +111,7 @@ func (db *DB) GetCount(statement string) (val int, err error) {
 }
 
 // RankFilesize returns a list of files, ordered by filesize
-func (db *DB) RankFilesize() (err error) {
+func (db *DB) RankFilesize() error {
 	var files string
 	rows, err := db.Query(`SELECT filename, filesize
                             FROM files
@@ -135,7 +135,7 @@ func (db *DB) RankFilesize() (err error) {
 }
 
 // RankModified returns a list of files, ordered by modified date
-func (db *DB) RankModified() (err error) {
+func (db *DB) RankModified() error {
 	var files string
 	rows, err := db.Query(`SELECT filename, filesize, mtime
                             FROM files
@@ -160,7 +160,7 @@ func (db *DB) RankModified() (err error) {
 }
 
 // ListDuplicates returns a list of duplicate files, ordered by count
-func (db *DB) ListDuplicates() (err error) {
+func (db *DB) ListDuplicates() error {
 	var files string
 	rows, err := db.Query(`SELECT filename, COUNT(checksum_sha256) AS count, SUM(filesize) as totalsize
                             FROM files
