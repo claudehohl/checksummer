@@ -248,3 +248,8 @@ func (db *DB) PruneChanged() error {
                         WHERE checksum_ok = 0`)
 	return err
 }
+
+// ReindexCheck [todo]
+func (db *DB) ReindexCheck() error {
+	return nil
+}

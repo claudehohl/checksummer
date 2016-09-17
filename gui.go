@@ -48,7 +48,7 @@ func LaunchGUI(db *DB) {
 	if filesInDB > 0 {
 		fmt.Println("[cd] check files in database")
 		fmt.Println("[mc] make checksums")
-		// fmt.Println("[rc] reindex & check all files")
+		fmt.Println("[rc] reindex & check all files")
 	}
 	fmt.Println("")
 	fmt.Println("=== Analysis ===")
@@ -67,7 +67,7 @@ func LaunchGUI(db *DB) {
 		fmt.Println("[pc] prune changed files")
 	}
 	fmt.Println("")
-	fmt.Println("[cb] change basepath")
+	// fmt.Println("[cb] change basepath")
 	fmt.Println("[q] exit")
 	fmt.Println("")
 
@@ -86,6 +86,8 @@ func LaunchGUI(db *DB) {
 		ChangeBasepath(db)
 	case "mc":
 		MakeChecksums(db)
+	case "rc":
+		db.ReindexCheck()
 	case "r":
 		db.RankFilesize()
 	case "m":
