@@ -184,3 +184,67 @@ func (db *DB) ListDuplicates() error {
 	}
 	return err
 }
+
+// ShowDeleted returns a list of deleted files, ordered by filesize
+func (db *DB) ShowDeleted() error {
+	var files string
+	rows, err := db.Query(`SELECT filename, filesize
+                            FROM files
+                            WHERE file_found = '0'
+                            ORDER BY filesize DESC`)
+	defer rows.Close()
+	if err == nil {
+		for rows.Next() {
+			var filename string
+			var filesize int64
+			err = rows.Scan(&filename, &filesize)
+			if err != nil {
+				return err
+			}
+			files = files + fmt.Sprintf("%v\t%v\n", filesize, filename)
+		}
+		pager(files, false)
+		return nil
+	}
+	return err
+}
+
+// ShowChanged returns a list of changed files, ordered by filesize
+func (db *DB) ShowChanged() error {
+	var files string
+	rows, err := db.Query(`SELECT filename, filesize
+                            FROM files
+                            WHERE checksum_ok = '0'
+                            ORDER BY filesize DESC`)
+	defer rows.Close()
+	if err == nil {
+		for rows.Next() {
+			var filename string
+			var filesize int64
+			err = rows.Scan(&filename, &filesize)
+			if err != nil {
+				return err
+			}
+			files = files + fmt.Sprintf("%v\t%v\n", filesize, filename)
+		}
+		pager(files, false)
+		return nil
+	}
+	return err
+}
+
+// PruneDeleted removes deleted files from db
+func (db *DB) PruneDeleted() error {
+	_, err := db.Exec("DELETE FROM files WHERE file_found = '0'")
+	return err
+}
+
+// PruneChanged sets the checksum to NULL for changed files
+func (db *DB) PruneChanged() error {
+	_, err := db.Exec(`UPDATE files
+                        SET checksum_sha256 = NULL,
+                        checksum_ok = NULL,
+                        filesize = NULL
+                        WHERE checksum_ok = 0`)
+	return err
+}

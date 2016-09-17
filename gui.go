@@ -28,7 +28,17 @@ func LaunchGUI(db *DB) {
 	}
 	totalSize := ByteSize(ts)
 
-	fmt.Println("Checksummer v3.0.0-dev223 - filesystem intelligence")
+	deletedFiles, err := db.GetCount("SELECT count(id) FROM files WHERE file_found = '0'")
+	if err != nil {
+		deletedFiles = 0
+	}
+
+	changedFiles, err := db.GetCount("SELECT id FROM files WHERE checksum_ok = '0'")
+	if err != nil {
+		deletedFiles = 0
+	}
+
+	fmt.Println("Checksummer v3.0.0-dev256 - filesystem intelligence")
 	fmt.Println("")
 	fmt.Println("basepath is:", basepath)
 	fmt.Println("total size: ", totalSize)
@@ -46,12 +56,16 @@ func LaunchGUI(db *DB) {
 		fmt.Println("[s] search files")
 		fmt.Println("[r] rank by filesize")
 		fmt.Println("[m] recently modified files")
+		fmt.Println("[ld] list duplicate files")
 	}
-	fmt.Println("[ld] list duplicate files")
-	// fmt.Println("[d] show X deleted files")
-	// fmt.Println("[pd] prune deleted files")
-	// fmt.Println("[ch] show X changed files")
-	// fmt.Println("[pc] prune changed files")
+	if deletedFiles > 0 {
+		fmt.Printf("[d] show %v deleted files\n", deletedFiles)
+		fmt.Println("[pd] prune deleted files")
+	}
+	if changedFiles > 0 {
+		fmt.Printf("[ch] show %v changed files", changedFiles)
+		fmt.Println("[pc] prune changed files")
+	}
 	fmt.Println("")
 	fmt.Println("[cb] change basepath")
 	fmt.Println("[q] exit")
@@ -77,8 +91,15 @@ func LaunchGUI(db *DB) {
 	case "m":
 		db.RankModified()
 	case "ld":
-		err := db.ListDuplicates()
-		checkErr(err)
+		db.ListDuplicates()
+	case "d":
+		db.ShowDeleted()
+	case "pd":
+		db.PruneDeleted()
+	case "ch":
+		db.ShowChanged()
+	case "pc":
+		db.PruneChanged()
 	case "q":
 		return
 	}
