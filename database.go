@@ -7,6 +7,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"os"
 	"strings"
+	"time"
 )
 
 // DB wraps sql.DB
@@ -144,7 +145,7 @@ func (db *DB) RankModified() (err error) {
 			if err != nil {
 				return err
 			}
-			files = files + fmt.Sprintf("%v\t%v\t%v\n", date, ByteSize(filesize), filename)
+			files = files + fmt.Sprintf("%v\t%v\t%v\n", time.Unix(date, 0), ByteSize(filesize), filename)
 		}
 		pager(files, false)
 		return nil
