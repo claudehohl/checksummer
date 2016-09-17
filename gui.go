@@ -67,7 +67,7 @@ func LaunchGUI(db *DB) {
 		fmt.Println("[pc] prune changed files")
 	}
 	fmt.Println("")
-	// fmt.Println("[cb] change basepath")
+	fmt.Println("[cb] change basepath")
 	fmt.Println("[q] exit")
 	fmt.Println("")
 
