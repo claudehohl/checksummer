@@ -47,7 +47,7 @@ func LaunchGUI(db *DB) {
 		fmt.Println("[r] rank by filesize")
 		fmt.Println("[m] recently modified files")
 	}
-	// fmt.Println("[ld] list duplicate files")
+	fmt.Println("[ld] list duplicate files")
 	// fmt.Println("[d] show X deleted files")
 	// fmt.Println("[pd] prune deleted files")
 	// fmt.Println("[ch] show X changed files")
@@ -76,6 +76,9 @@ func LaunchGUI(db *DB) {
 		db.RankFilesize()
 	case "m":
 		db.RankModified()
+	case "ld":
+		err := db.ListDuplicates()
+		checkErr(err)
 	case "q":
 		return
 	}
@@ -85,7 +88,7 @@ func LaunchGUI(db *DB) {
 }
 
 func clearScreen() {
-	// fmt.Print("\033[H\033[2J")
+	fmt.Print("\033[H\033[2J")
 }
 
 func pager(str string, autoQuit bool) {

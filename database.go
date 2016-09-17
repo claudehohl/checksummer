@@ -27,23 +27,23 @@ func Open(dataSourceName string) (*DB, error) {
 // Init initializes the database
 func (db *DB) Init() error {
 	_, err := db.Exec(`CREATE TABLE files (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            filename TEXT UNIQUE,
-            checksum_sha256 TEXT,
-            filesize INTEGER,
-            mtime INTEGER,
-            file_found INTEGER,
-            checksum_ok INTEGER
-            )`)
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        filename TEXT UNIQUE,
+                        checksum_sha256 TEXT,
+                        filesize INTEGER,
+                        mtime INTEGER,
+                        file_found INTEGER,
+                        checksum_ok INTEGER
+                        )`)
 	if err != nil {
 		return err
 	}
 
 	_, err = db.Exec(`CREATE TABLE options (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            o_name TEXT UNIQUE,
-            o_value TEXT
-            )`)
+                        id integer primary key autoincrement,
+                        o_name text unique,
+                        o_value text
+                        )`)
 	if err != nil {
 		return err
 	}
@@ -113,7 +113,10 @@ func (db *DB) GetCount(statement string) (val int, err error) {
 // RankFilesize returns a list of files, ordered by filesize
 func (db *DB) RankFilesize() (err error) {
 	var files string
-	rows, err := db.Query("SELECT filename, filesize FROM files WHERE filesize IS NOT NULL ORDER BY filesize DESC")
+	rows, err := db.Query(`SELECT filename, filesize
+                            FROM files
+                            WHERE filesize IS NOT NULL
+                            ORDER BY filesize DESC`)
 	defer rows.Close()
 	if err == nil {
 		for rows.Next() {
@@ -134,7 +137,10 @@ func (db *DB) RankFilesize() (err error) {
 // RankModified returns a list of files, ordered by modified date
 func (db *DB) RankModified() (err error) {
 	var files string
-	rows, err := db.Query("SELECT filename, filesize, mtime FROM files WHERE file_found = '1' ORDER BY mtime DESC")
+	rows, err := db.Query(`SELECT filename, filesize, mtime
+                            FROM files
+                            WHERE file_found = '1'
+                            ORDER BY mtime DESC`)
 	defer rows.Close()
 	if err == nil {
 		for rows.Next() {
@@ -146,6 +152,32 @@ func (db *DB) RankModified() (err error) {
 				return err
 			}
 			files = files + fmt.Sprintf("%v\t%v\t%v\n", time.Unix(date, 0), ByteSize(filesize), filename)
+		}
+		pager(files, false)
+		return nil
+	}
+	return err
+}
+
+// ListDuplicates returns a list of duplicate files, ordered by count
+func (db *DB) ListDuplicates() (err error) {
+	var files string
+	rows, err := db.Query(`SELECT filename, COUNT(checksum_sha256) AS count, SUM(filesize) as totalsize
+                            FROM files
+                            GROUP BY checksum_sha256
+                            HAVING (COUNT(checksum_sha256) > 1)
+                            ORDER BY totalsize DESC`)
+	defer rows.Close()
+	if err == nil {
+		for rows.Next() {
+			var filename string
+			var count int64
+			var filesize int64
+			err = rows.Scan(&filename, &count, &filesize)
+			if err != nil {
+				return err
+			}
+			files = files + fmt.Sprintf("%v\t%v\t%v\n", count, ByteSize(filesize), filename)
 		}
 		pager(files, false)
 		return nil
