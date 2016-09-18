@@ -501,7 +501,7 @@ func (db *DB) ShowDeleted() error {
 			var date float64 // oddities from a python populated database
 			err = rows.Scan(&filename, &filesize, &date)
 			if err != nil {
-				return err
+				// ignore, size + date col may be empty when file is not found
 			}
 			formattedDate := time.Unix(int64(date), 0).Format("2006-01-02 15:05:05")
 			buffer.WriteString(fmt.Sprintf("%v    %8v    %v%v\n", formattedDate, ByteSize(filesize), basepath, filename))
