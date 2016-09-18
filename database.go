@@ -258,7 +258,11 @@ func (db *DB) MakeChecksums() {
 	basepath, err := db.GetOption("basepath")
 	checkErr(err)
 
+	updateStatement := "UPDATE files SET checksum_sha256 = ? WHERE id = ?"
+	notFoundStatement := "UPDATE files SET file_found = 0 WHERE id = ?"
+
 	fileCount, err := db.GetCount("SELECT count(id) FROM files WHERE checksum_sha256 IS NULL AND file_found = '1'")
+	checkErr(err)
 	ts, err := db.GetCount("SELECT sum(filesize) FROM files WHERE checksum_sha256 IS NULL AND file_found = '1'")
 	checkErr(err)
 	var totalSize int64
@@ -301,9 +305,9 @@ func (db *DB) MakeChecksums() {
 		checkErr(err)
 
 		// prepare update statement
-		stmtUpdate, err = tx.Prepare("UPDATE files SET checksum_sha256 = ? WHERE id = ?")
+		stmtUpdate, err = tx.Prepare(updateStatement)
 		checkErr(err)
-		stmtNotFound, err = tx.Prepare("UPDATE files SET file_found = 0 WHERE id = ?")
+		stmtNotFound, err = tx.Prepare(notFoundStatement)
 		checkErr(err)
 
 		for _, file := range files {
@@ -337,9 +341,9 @@ func (db *DB) MakeChecksums() {
 		checkErr(err)
 
 		// prepare update statement
-		stmtUpdate, err = tx.Prepare("UPDATE files SET checksum_sha256 = ? WHERE id = ?")
+		stmtUpdate, err = tx.Prepare(updateStatement)
 		checkErr(err)
-		stmtNotFound, err = tx.Prepare("UPDATE files SET file_found = 0 WHERE id = ?")
+		stmtNotFound, err = tx.Prepare(notFoundStatement)
 		checkErr(err)
 	}
 
@@ -485,9 +489,122 @@ func (db *DB) PruneChanged() error {
 	return err
 }
 
-// ReindexCheck TODO
-func (db *DB) ReindexCheck() error {
-	return nil
+// ReindexCheck runs over all files and compares checksums
+func (db *DB) ReindexCheck() {
+
+	// get basepath
+	basepath, err := db.GetOption("basepath")
+	checkErr(err)
+
+	updateStatement := "UPDATE files SET checksum_ok = ? WHERE id = ?"
+	notFoundStatement := "UPDATE files SET file_found = 0 WHERE id = ?"
+
+	db.CollectFiles()
+	db.CheckFilesDB()
+	db.MakeChecksums()
+
+	// set to check
+	fmt.Printf("preparing to check files...")
+	_, err = db.Exec(`UPDATE files SET checksum_ok = NULL WHERE file_found = '1'`)
+	checkErr(err)
+	fmt.Printf("OK\n")
+
+	fileCount, err := db.GetCount("SELECT count(id) FROM files WHERE checksum_ok IS NULL AND file_found = '1'")
+	checkErr(err)
+	ts, err := db.GetCount("SELECT sum(filesize) FROM files WHERE checksum_ok IS NULL AND file_found = '1'")
+	checkErr(err)
+	var totalSize int64
+	totalSize = int64(ts)
+
+	// dynamically calculate blocksize.
+	// lots of small files = large blocksize (10000)
+	// huge, few files = small blocksize (100)
+	// this is relevant because the commit happens after each block
+	fileSizePerCount := float32(totalSize) / float32(fileCount)
+	bs := 10000.0 / fileSizePerCount * 50000
+	blockSize := int(bs)
+
+	// sqlite dies with "unable to open database [14]" when I run two stmts concurrently
+	// therefore, we process by fetching blocks of files
+	for i := fileCount + blockSize; i > 0; i = i - blockSize {
+		var (
+			tx           *sql.Tx
+			stmtUpdate   *sql.Stmt
+			stmtNotFound *sql.Stmt
+			files        []File
+			rows         *sql.Rows
+		)
+		remaining := i
+
+		rows, err = db.Query(`SELECT id, filename, filesize, checksum_sha256
+                              FROM files
+                              WHERE checksum_ok IS NULL
+                              AND file_found = '1'
+                              LIMIT ?`, blockSize)
+		defer rows.Close()
+		checkErr(err)
+
+		for rows.Next() {
+			var id int64
+			var filename string
+			var filesize int64
+			var checksum string
+			rows.Scan(&id, &filename, &filesize, &checksum)
+			files = append(files, File{ID: id, Name: filename, Size: filesize, Checksum: checksum})
+		}
+		rows.Close()
+
+		tx, err = db.Begin()
+		checkErr(err)
+
+		// prepare update statement
+		stmtUpdate, err = tx.Prepare(updateStatement)
+		checkErr(err)
+		stmtNotFound, err = tx.Prepare(notFoundStatement)
+		checkErr(err)
+
+		for _, file := range files {
+			path := basepath + file.Name
+
+			fmt.Printf("(%d, %s) making checksum: %s (%s)... ", remaining, ByteSize(totalSize), path, ByteSize(file.Size))
+
+			f, err := os.Open(path)
+			if err != nil {
+				// file not found
+				_, err = stmtNotFound.Exec(file.ID)
+				checkErr(err)
+			} else {
+				hash, err := HashFile(path)
+				checkErr(err)
+				if hash == file.Checksum {
+					_, err = stmtUpdate.Exec(1, file.ID)
+					checkErr(err)
+				} else {
+					_, err = stmtUpdate.Exec(0, file.ID)
+					checkErr(err)
+				}
+			}
+			f.Close()
+
+			fmt.Println("OK")
+			remaining--
+			totalSize = totalSize - file.Size
+		}
+
+		stmtUpdate.Close()
+		stmtNotFound.Close()
+		tx.Commit()
+
+		tx, err = db.Begin()
+		checkErr(err)
+
+		// prepare update statement
+		stmtUpdate, err = tx.Prepare(updateStatement)
+		checkErr(err)
+		stmtNotFound, err = tx.Prepare(notFoundStatement)
+		checkErr(err)
+	}
+
 }
 
 // ByteSize displays bytes in human-readable format
