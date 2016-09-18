@@ -22,8 +22,10 @@ func main() {
 	flag.Parse()
 	database := flag.Arg(0)
 	if database == "" {
-		// TODO: nicer error msg
-		fmt.Println("please provide path to checksummer.db!")
+		fmt.Println("Usage:   ./archive/checksummer.py sqlite3.db [search arguments]")
+		fmt.Println("")
+		fmt.Println("Example: ./archive/checksummer.py myfiles.db")
+		fmt.Println("")
 		os.Exit(1)
 	}
 
