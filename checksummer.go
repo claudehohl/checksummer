@@ -7,7 +7,7 @@ import (
 )
 
 // VERSION sets the version
-const VERSION = "v3.0.0-beta1"
+const VERSION = "v3.0.0-beta3"
 
 // File holds the attributes
 type File struct {
@@ -41,7 +41,11 @@ func main() {
 		db.ChangeBasepath()
 	}
 
-	// TODO: search function
+	term := flag.Arg(1)
+	if term != "" {
+		db.Search(term)
+		os.Exit(0)
+	}
 
 	LaunchGUI(db)
 }
