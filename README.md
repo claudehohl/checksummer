@@ -65,9 +65,9 @@ If you've moved your files on a different location, you can change the base path
 
 Just append the search term:
 
-`checksummer /mnt/Data/.checksummer.db movies` - find any file- or folder name containing "movies"
+`checksummer /mnt/Data/.checksummer.db movies` find any file- or folder name containing "movies"
 
-`checksummer /mnt/Data/.checksummer.db .flac` - list all .flac files
+`checksummer /mnt/Data/.checksummer.db .flac` list all .flac files
 
-`checksummer /mnt/Data/.checksummer.db .flac | wc -l` - how many .flac files do you have?
+`checksummer /mnt/Data/.checksummer.db .flac | wc -l` how many .flac files do you have?
 
