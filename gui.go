@@ -132,6 +132,9 @@ func clearScreen() {
 
 func pager(str string) {
 
+	// nasty bug forces me to scroll at the end (+G)
+	// otherwise, less may hang
+	// this hack will be replaced by the termui interface without less
 	cmd := exec.Command("less", "+G")
 
 	// create a pipe (blocking)
