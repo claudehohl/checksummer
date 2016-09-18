@@ -130,15 +130,9 @@ func clearScreen() {
 	fmt.Print("\033[H\033[2J")
 }
 
-func pager(str string, autoQuit bool) {
+func pager(str string) {
 
-	var cmd *exec.Cmd
-
-	if autoQuit {
-		cmd = exec.Command("less", "--quit-if-one-screen")
-	} else {
-		cmd = exec.Command("less")
-	}
+	cmd := exec.Command("less", "+G")
 
 	// create a pipe (blocking)
 	r, stdin := io.Pipe()

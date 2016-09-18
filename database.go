@@ -378,7 +378,7 @@ func (db *DB) Search(term string) error {
 			}
 			buffer.WriteString(fmt.Sprintf("%8v    %v\n", ByteSize(filesize), filename))
 		}
-		pager(buffer.String(), false)
+		pager(buffer.String())
 		return nil
 	}
 	return err
@@ -402,7 +402,7 @@ func (db *DB) RankFilesize() error {
 			}
 			buffer.WriteString(fmt.Sprintf("%8v    %v\n", ByteSize(filesize), filename))
 		}
-		pager(buffer.String(), false)
+		pager(buffer.String())
 		return nil
 	}
 	return err
@@ -428,7 +428,7 @@ func (db *DB) RankModified() error {
 			formattedDate := time.Unix(int64(date), 0).Format("2006-01-02 15:05:05")
 			buffer.WriteString(fmt.Sprintf("%v    %8v    %v\n", formattedDate, ByteSize(filesize), filename))
 		}
-		pager(buffer.String(), false)
+		pager(buffer.String())
 		return nil
 	}
 	return err
@@ -454,7 +454,7 @@ func (db *DB) ListDuplicates() error {
 			}
 			buffer.WriteString(fmt.Sprintf("%5v    %8v    %v\n", count, ByteSize(filesize), filename))
 		}
-		pager(buffer.String(), false)
+		pager(buffer.String())
 		return nil
 	}
 	return err
@@ -478,7 +478,7 @@ func (db *DB) ShowDeleted() error {
 			}
 			buffer.WriteString(fmt.Sprintf("%8v    %v\n", filesize, filename))
 		}
-		pager(buffer.String(), false)
+		pager(buffer.String())
 		return nil
 	}
 	return err
@@ -502,7 +502,7 @@ func (db *DB) ShowChanged() error {
 			}
 			buffer.WriteString(fmt.Sprintf("%8v    %v\n", filesize, filename))
 		}
-		pager(buffer.String(), false)
+		pager(buffer.String())
 		return nil
 	}
 	return err
