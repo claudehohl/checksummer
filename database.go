@@ -394,12 +394,13 @@ func (db *DB) RankModified() error {
 		for rows.Next() {
 			var filename string
 			var filesize int64
-			var date int64
+			var date float64 // oddities from a python populated database
 			err = rows.Scan(&filename, &filesize, &date)
 			if err != nil {
 				return err
 			}
-			buffer.WriteString(fmt.Sprintf("%v\t%v\t%v\n", time.Unix(date, 0), ByteSize(filesize), filename))
+			unixDate := time.Unix(int64(date), 0)
+			buffer.WriteString(fmt.Sprintf("%v\t%v\t%v\n", unixDate, ByteSize(filesize), filename))
 		}
 		pager(buffer.String(), false)
 		return nil
