@@ -40,7 +40,7 @@ func LaunchGUI(db *DB) {
 	fmt.Printf("OK\n")
 
 	fmt.Printf("getting changed files count...")
-	changedFiles, err := db.GetCount("SELECT id FROM files WHERE checksum_ok = '0'")
+	changedFiles, err := db.GetCount("SELECT count(id) FROM files WHERE checksum_ok = '0'")
 	if err != nil {
 		changedFiles = 0
 	}
@@ -73,7 +73,7 @@ func LaunchGUI(db *DB) {
 		fmt.Println("[pd] prune deleted files")
 	}
 	if changedFiles > 0 {
-		fmt.Printf("[ch] show %v changed files", changedFiles)
+		fmt.Printf("[ch] show %v changed files\n", changedFiles)
 		fmt.Println("[pc] prune changed files")
 	}
 	fmt.Println("")
