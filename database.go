@@ -635,7 +635,7 @@ func (db *DB) ReindexCheck() {
 		for _, file := range files {
 			path := basepath + file.Name
 
-			fmt.Printf("(%d, %s) making checksum: %s (%s)... ", remaining, ByteSize(totalSize), path, ByteSize(file.Size))
+			fmt.Printf("(%d, %s) checking checksum: %s (%s)... ", remaining, ByteSize(totalSize), path, ByteSize(file.Size))
 
 			f, err := os.Open(path)
 			if err != nil {
