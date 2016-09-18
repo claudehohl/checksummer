@@ -485,7 +485,7 @@ func (db *DB) PruneChanged() error {
 	return err
 }
 
-// ReindexCheck [todo]
+// ReindexCheck TODO
 func (db *DB) ReindexCheck() error {
 	return nil
 }

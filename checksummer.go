@@ -2,7 +2,12 @@ package main
 
 import (
 	"flag"
+	"fmt"
+	"os"
 )
+
+// VERSION sets the version
+const VERSION = "v3.0.0-dev300"
 
 // File holds the attributes
 type File struct {
@@ -18,7 +23,8 @@ func main() {
 	database := flag.Arg(0)
 	if database == "" {
 		// TODO: nicer error msg
-		panic("please provide path to checksummer.db!")
+		fmt.Println("please provide path to checksummer.db!")
+		os.Exit(1)
 	}
 
 	// initialize database
