@@ -9,6 +9,10 @@ You want to move your data to an encrypted filesystem and want to be sure, that 
 
 checksummer.py creates a checksum of EVERY file. You can change the base path (i.e. your data has new mountpoint) and recheck again. checksummer.py reports differences.
 
+## Installation
+
+`go get github.com/claudehohl/checksummer`
+
 ## Bonus features
 
 ### Search files by filename
