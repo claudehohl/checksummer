@@ -24,9 +24,9 @@ func main() {
 	if database == "" {
 		fmt.Println("Checksummer version", VERSION)
 		fmt.Println("")
-		fmt.Println("Usage:   ./archive/checksummer.py sqlite3.db [search arguments]")
+		fmt.Println("Usage:   ./checksummer sqlite3.db [search arguments]")
 		fmt.Println("")
-		fmt.Println("Example: ./archive/checksummer.py myfiles.db")
+		fmt.Println("Example: ./checksummer myfiles.db")
 		fmt.Println("")
 		os.Exit(1)
 	}
