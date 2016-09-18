@@ -135,9 +135,9 @@ func pager(str string, autoQuit bool) {
 	var cmd *exec.Cmd
 
 	if autoQuit {
-		cmd = exec.Command("less", "-X", "--quit-if-one-screen")
+		cmd = exec.Command("less", "--quit-if-one-screen")
 	} else {
-		cmd = exec.Command("less", "-X")
+		cmd = exec.Command("less")
 	}
 
 	// create a pipe (blocking)
