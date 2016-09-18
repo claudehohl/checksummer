@@ -269,6 +269,8 @@ func (db *DB) MakeChecksums() {
 
 	fileCount, err := db.GetCount("SELECT count(id) FROM files WHERE checksum_sha256 IS NULL AND file_found = '1'")
 	checkErr(err)
+	remaining := fileCount
+
 	ts, err := db.GetCount("SELECT sum(filesize) FROM files WHERE checksum_sha256 IS NULL AND file_found = '1'")
 	if err != nil {
 		ts = 0
@@ -294,7 +296,6 @@ func (db *DB) MakeChecksums() {
 			files        []File
 			rows         *sql.Rows
 		)
-		remaining := i
 
 		rows, err = db.Query("SELECT id, filename, filesize FROM files WHERE checksum_sha256 IS NULL AND file_found = '1' LIMIT ?", blockSize)
 		defer rows.Close()
@@ -545,6 +546,8 @@ func (db *DB) ReindexCheck() {
 
 	fileCount, err := db.GetCount("SELECT count(id) FROM files WHERE checksum_ok IS NULL AND file_found = '1'")
 	checkErr(err)
+	remaining := fileCount
+
 	ts, err := db.GetCount("SELECT sum(filesize) FROM files WHERE checksum_ok IS NULL AND file_found = '1'")
 	checkErr(err)
 	var totalSize int64
@@ -568,7 +571,6 @@ func (db *DB) ReindexCheck() {
 			files        []File
 			rows         *sql.Rows
 		)
-		remaining := i
 
 		rows, err = db.Query(`SELECT id, filename, filesize, checksum_sha256
                               FROM files
