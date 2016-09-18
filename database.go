@@ -118,6 +118,8 @@ func (db *DB) GetCount(statement string) (val int, err error) {
 // CollectFiles starts insert worker and walks through files
 func (db *DB) CollectFiles() {
 
+	fmt.Println("Collecting files")
+
 	// get basepath
 	basepath, err := db.GetOption("basepath")
 	checkErr(err)
@@ -190,6 +192,8 @@ func (db *DB) CollectFiles() {
 // CheckFilesDB collects stats for all files in database
 func (db *DB) CheckFilesDB() {
 
+	fmt.Println("Checking files in DB")
+
 	// get basepath
 	basepath, err := db.GetOption("basepath")
 	checkErr(err)
@@ -253,6 +257,8 @@ func (db *DB) CheckFilesDB() {
 
 // MakeChecksums makes checksums of all files
 func (db *DB) MakeChecksums() {
+
+	fmt.Println("Making checksums")
 
 	// get basepath
 	basepath, err := db.GetOption("basepath")
