@@ -41,6 +41,8 @@ func main() {
 		db.ChangeBasepath()
 	}
 
+	// TODO: search function
+
 	LaunchGUI(db)
 }
 
