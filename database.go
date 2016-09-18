@@ -425,9 +425,8 @@ func (db *DB) RankModified() error {
 			if err != nil {
 				return err
 			}
-			unixDate := time.Unix(int64(date), 0)
-			// TODO: format date
-			buffer.WriteString(fmt.Sprintf("%v    %8v    %v\n", unixDate, ByteSize(filesize), filename))
+			formattedDate := time.Unix(int64(date), 0).Format("2006-01-02 15:05:05")
+			buffer.WriteString(fmt.Sprintf("%v    %8v    %v\n", formattedDate, ByteSize(filesize), filename))
 		}
 		pager(buffer.String(), false)
 		return nil
