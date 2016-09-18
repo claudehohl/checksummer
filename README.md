@@ -37,7 +37,7 @@ It's a good habit to put that on the root of the filesystem you want to check as
 
 First run: Provide the base path; from which checksummer will scan files. You can change that anytime.
 
-`./checksummer /mnt/Data/.checksummer.db`
+`checksummer /mnt/Data/.checksummer.db`
 
 ## Main menu
 
@@ -65,5 +65,9 @@ If you've moved your files on a different location, you can change the base path
 
 Just append the search term:
 
-./checksummer /mnt/Data/.checksummer.db movies
+`checksummer /mnt/Data/.checksummer.db movies` - find any file- or folder name containing "movies"
+
+`checksummer /mnt/Data/.checksummer.db .flac` - list all .flac files
+
+`checksummer /mnt/Data/.checksummer.db .flac | wc -l` - how many .flac files do you have?
 
