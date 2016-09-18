@@ -464,7 +464,7 @@ func (db *DB) ListDuplicates() error {
 // ShowDeleted returns a list of deleted files, ordered by filesize
 func (db *DB) ShowDeleted() error {
 	var buffer bytes.Buffer
-	rows, err := db.Query(`SELECT filename, filesize
+	rows, err := db.Query(`SELECT filename, filesize, mtime
                             FROM files
                             WHERE file_found = '0'
                             ORDER BY filesize DESC`)
@@ -473,11 +473,13 @@ func (db *DB) ShowDeleted() error {
 		for rows.Next() {
 			var filename string
 			var filesize int64
-			err = rows.Scan(&filename, &filesize)
+			var date float64 // oddities from a python populated database
+			err = rows.Scan(&filename, &filesize, &date)
 			if err != nil {
 				return err
 			}
-			buffer.WriteString(fmt.Sprintf("%8v    %v\n", filesize, filename))
+			formattedDate := time.Unix(int64(date), 0).Format("2006-01-02 15:05:05")
+			buffer.WriteString(fmt.Sprintf("%v    %8v    %v\n", formattedDate, ByteSize(filesize), filename))
 		}
 		pager(buffer.String())
 		return nil
@@ -501,7 +503,7 @@ func (db *DB) ShowChanged() error {
 			if err != nil {
 				return err
 			}
-			buffer.WriteString(fmt.Sprintf("%8v    %v\n", filesize, filename))
+			buffer.WriteString(fmt.Sprintf("%8v    %v\n", ByteSize(filesize), filename))
 		}
 		pager(buffer.String())
 		return nil
