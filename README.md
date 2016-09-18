@@ -5,7 +5,7 @@ Create checksums and check if files are corrupted. Useful to fight bitrot!
 
 Files on your new RAID-controller get corrupt?
 
-You want to move your data to an encrypted filesystem and want to be sure, that every file is saved correctly?
+You want to move your data to an encrypted filesystem and want to be sure that every file is being written and read correctly?
 
 checksummer creates a checksum of EVERY file and saves it into a sqlite3 db. You can change the base path (i.e. your data has new mountpoint) and recheck again. Every bit of every file is being read and checksummer reports differences.
 
