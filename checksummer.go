@@ -28,7 +28,7 @@ func main() {
 
 	basepath, _ := db.GetOption("basepath")
 	if basepath == "" {
-		ChangeBasepath(db)
+		db.ChangeBasepath()
 	}
 
 	LaunchGUI(db)

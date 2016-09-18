@@ -81,11 +81,11 @@ func LaunchGUI(db *DB) {
 	case "cf":
 		db.CollectFiles()
 	case "cd":
-		CheckFilesDB(db)
+		db.CheckFilesDB()
 	case "cb":
-		ChangeBasepath(db)
+		db.ChangeBasepath()
 	case "mc":
-		MakeChecksums(db)
+		db.MakeChecksums()
 	case "rc":
 		db.ReindexCheck()
 	case "r":
