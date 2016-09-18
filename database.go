@@ -66,9 +66,10 @@ func (db *DB) Init() error {
 func (db *DB) ChangeBasepath() error {
 	reader := bufio.NewReader(os.Stdin)
 	fmt.Println("Choose base path")
-	fmt.Print("(enter full path, without trailing slash): ")
+	fmt.Print("enter full path: ")
 	basepath, _ := reader.ReadString('\n')
 	basepath = strings.Trim(basepath, "\n")
+	basepath = strings.TrimRight(basepath, "/")
 	err := db.SetOption("basepath", basepath)
 	return err
 }
