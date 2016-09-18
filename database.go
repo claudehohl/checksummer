@@ -229,6 +229,8 @@ func (db *DB) CheckFilesDB() {
 		// prepare update statement
 		stmt, err := tx.Prepare("UPDATE files SET filesize = ?, mtime = ?, file_found = ? WHERE id = ?")
 		checkErr(err)
+		stmtNotFound, err := tx.Prepare("UPDATE files SET file_found = 0 WHERE id = ?")
+		checkErr(err)
 
 		for _, file := range files {
 			path := basepath + file.Name
@@ -236,13 +238,12 @@ func (db *DB) CheckFilesDB() {
 			f, err := os.Open(path)
 			if err != nil {
 				// file not found
-				_, err = stmt.Exec(nil, nil, 0, file.ID)
+				_, err = stmtNotFound.Exec(file.ID)
 				checkErr(err)
 			} else {
 				fi, err := f.Stat()
 				file.Size = fi.Size()
 				file.Mtime = fi.ModTime().Unix()
-				checkErr(err)
 				_, err = stmt.Exec(file.Size, file.Mtime, 1, file.ID)
 				checkErr(err)
 			}
