@@ -14,31 +14,43 @@ func LaunchGUI(db *DB) {
 
 	clearScreen()
 
+	fmt.Printf("getting basepath...")
 	basepath, err := db.GetOption("basepath")
 	checkErr(err)
+	fmt.Printf("OK\n")
 
+	fmt.Printf("getting file count...")
 	filesInDB, err := db.GetCount("SELECT id FROM files LIMIT 1")
 	if err != nil {
 		filesInDB = 0
 	}
+	fmt.Printf("OK\n")
 
+	fmt.Printf("getting total filesize...")
 	ts, err := db.GetCount("SELECT sum(filesize) FROM files")
 	if err != nil {
 		ts = 0
 	}
 	totalSize := ByteSize(ts)
+	fmt.Printf("OK\n")
 
+	fmt.Printf("getting deleted files count...")
 	deletedFiles, err := db.GetCount("SELECT count(id) FROM files WHERE file_found = '0'")
 	if err != nil {
 		deletedFiles = 0
 	}
+	fmt.Printf("OK\n")
 
+	fmt.Printf("getting changed files count...")
 	changedFiles, err := db.GetCount("SELECT id FROM files WHERE checksum_ok = '0'")
 	if err != nil {
-		deletedFiles = 0
+		changedFiles = 0
 	}
+	fmt.Printf("OK\n")
 
-	fmt.Println("Checksummer v3.0.0-dev256 - filesystem intelligence")
+	clearScreen()
+
+	fmt.Println("Checksummer v3.0.0-dev300 - filesystem intelligence")
 	fmt.Println("")
 	fmt.Println("basepath is:", basepath)
 	fmt.Println("total size: ", totalSize)
