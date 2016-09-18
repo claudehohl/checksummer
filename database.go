@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"database/sql"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3"
@@ -112,7 +113,7 @@ func (db *DB) GetCount(statement string) (val int, err error) {
 
 // RankFilesize returns a list of files, ordered by filesize
 func (db *DB) RankFilesize() error {
-	var files string
+	var buffer bytes.Buffer
 	rows, err := db.Query(`SELECT filename, filesize
                             FROM files
                             WHERE filesize IS NOT NULL
@@ -126,9 +127,9 @@ func (db *DB) RankFilesize() error {
 			if err != nil {
 				return err
 			}
-			files = files + fmt.Sprintf("%v\t%v\n", ByteSize(filesize), filename)
+			buffer.WriteString(fmt.Sprintf("%v\t%v\n", ByteSize(filesize), filename))
 		}
-		pager(files, false)
+		pager(buffer.String(), false)
 		return nil
 	}
 	return err
