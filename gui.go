@@ -100,6 +100,12 @@ func LaunchGUI(db *DB) {
 		db.ReindexCheck()
 	case "r":
 		db.RankFilesize()
+	case "s":
+		reader := bufio.NewReader(os.Stdin)
+		fmt.Print("Enter searchterm: ")
+		term, _ := reader.ReadString('\n')
+		term = strings.Trim(term, "\n")
+		db.Search(term)
 	case "m":
 		db.RankModified()
 	case "ld":

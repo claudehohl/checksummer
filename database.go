@@ -358,6 +358,30 @@ func (db *DB) MakeChecksums() {
 	return
 }
 
+// Search returns a list of files, ordered by filesize
+func (db *DB) Search(term string) error {
+	var buffer bytes.Buffer
+	rows, err := db.Query(`SELECT filename, filesize
+                            FROM files
+                            WHERE filename LIKE ?
+                            ORDER BY filesize DESC`, "%"+term+"%")
+	defer rows.Close()
+	if err == nil {
+		for rows.Next() {
+			var filename string
+			var filesize int64
+			err = rows.Scan(&filename, &filesize)
+			if err != nil {
+				return err
+			}
+			buffer.WriteString(fmt.Sprintf("%v\t%v\n", ByteSize(filesize), filename))
+		}
+		pager(buffer.String(), false)
+		return nil
+	}
+	return err
+}
+
 // RankFilesize returns a list of files, ordered by filesize
 func (db *DB) RankFilesize() error {
 	var buffer bytes.Buffer
