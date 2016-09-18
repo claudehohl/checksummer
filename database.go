@@ -7,6 +7,7 @@ import (
 	"fmt"
 	_ "github.com/mattn/go-sqlite3"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -109,6 +110,78 @@ func (db *DB) GetCount(statement string) (val int, err error) {
 		return val, nil
 	}
 	return -1, err
+}
+
+// CollectFiles starts insert worker and walks through files
+func (db *DB) CollectFiles() {
+
+	// get basepath
+	basepath, err := db.GetOption("basepath")
+	checkErr(err)
+
+	var tx *sql.Tx
+	var stmt *sql.Stmt
+
+	tx, err = db.Begin()
+	checkErr(err)
+
+	// Precompile SQL statement
+	insertStatement := "INSERT INTO files(filename, filesize, mtime, file_found) VALUES(?, ?, ?, 1)"
+	stmt, err = tx.Prepare(insertStatement)
+	checkErr(err)
+
+	i := 0
+	err = filepath.Walk(basepath, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			fmt.Println(err)
+			return nil // actually not true, but we just wanna skip the file.
+		}
+
+		// skip nonregular files
+		if info.Mode().IsRegular() == false {
+			return nil
+		}
+
+		// populate the file
+		file := File{Name: path, Size: info.Size(), Mtime: info.ModTime().Unix()}
+
+		// strip basepath
+		file.Name = strings.Replace(file.Name, basepath, "", 1)
+
+		_, err = stmt.Exec(file.Name, file.Size, file.Mtime)
+		if err != nil {
+			// unique constraint failed, just skip.
+		}
+		i++
+
+		// commit every 10k files
+		if i%10000 == 0 {
+			fmt.Println(i)
+			err = stmt.Close()
+			checkErr(err)
+			err = tx.Commit()
+			checkErr(err)
+
+			// well. sql closes the connection after Commit(), unlike in python.
+			// so we have to reopen it again.
+
+			tx, err = db.Begin()
+			checkErr(err)
+
+			// Precompile SQL statement
+			stmt, err = tx.Prepare(insertStatement)
+			checkErr(err)
+		}
+
+		return nil
+	})
+	checkErr(err)
+
+	// final commit
+	err = stmt.Close()
+	checkErr(err)
+	err = tx.Commit()
+	checkErr(err)
 }
 
 // RankFilesize returns a list of files, ordered by filesize

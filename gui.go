@@ -79,7 +79,7 @@ func LaunchGUI(db *DB) {
 
 	switch choice {
 	case "cf":
-		CollectFiles(db)
+		db.CollectFiles()
 	case "cd":
 		CheckFilesDB(db)
 	case "cb":
