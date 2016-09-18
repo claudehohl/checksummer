@@ -363,6 +363,11 @@ func (db *DB) MakeChecksums() {
 
 // Search returns a list of files, ordered by filesize
 func (db *DB) Search(term string) error {
+
+	// get basepath
+	basepath, err := db.GetOption("basepath")
+	checkErr(err)
+
 	var buffer bytes.Buffer
 	rows, err := db.Query(`SELECT filename, filesize
                             FROM files
@@ -377,7 +382,7 @@ func (db *DB) Search(term string) error {
 			if err != nil {
 				return err
 			}
-			buffer.WriteString(fmt.Sprintf("%8v    %v\n", ByteSize(filesize), filename))
+			buffer.WriteString(fmt.Sprintf("%8v    %v%v\n", ByteSize(filesize), basepath, filename))
 		}
 		pager(buffer.String())
 		return nil
@@ -387,6 +392,11 @@ func (db *DB) Search(term string) error {
 
 // RankFilesize returns a list of files, ordered by filesize
 func (db *DB) RankFilesize() error {
+
+	// get basepath
+	basepath, err := db.GetOption("basepath")
+	checkErr(err)
+
 	var buffer bytes.Buffer
 	rows, err := db.Query(`SELECT filename, filesize
                             FROM files
@@ -401,7 +411,7 @@ func (db *DB) RankFilesize() error {
 			if err != nil {
 				return err
 			}
-			buffer.WriteString(fmt.Sprintf("%8v    %v\n", ByteSize(filesize), filename))
+			buffer.WriteString(fmt.Sprintf("%8v    %v%v\n", ByteSize(filesize), basepath, filename))
 		}
 		pager(buffer.String())
 		return nil
@@ -411,6 +421,11 @@ func (db *DB) RankFilesize() error {
 
 // RankModified returns a list of files, ordered by modified date
 func (db *DB) RankModified() error {
+
+	// get basepath
+	basepath, err := db.GetOption("basepath")
+	checkErr(err)
+
 	var buffer bytes.Buffer
 	rows, err := db.Query(`SELECT filename, filesize, mtime
                             FROM files
@@ -427,7 +442,7 @@ func (db *DB) RankModified() error {
 				return err
 			}
 			formattedDate := time.Unix(int64(date), 0).Format("2006-01-02 15:05:05")
-			buffer.WriteString(fmt.Sprintf("%v    %8v    %v\n", formattedDate, ByteSize(filesize), filename))
+			buffer.WriteString(fmt.Sprintf("%v    %8v    %v%v\n", formattedDate, ByteSize(filesize), basepath, filename))
 		}
 		pager(buffer.String())
 		return nil
@@ -437,6 +452,11 @@ func (db *DB) RankModified() error {
 
 // ListDuplicates returns a list of duplicate files, ordered by count
 func (db *DB) ListDuplicates() error {
+
+	// get basepath
+	basepath, err := db.GetOption("basepath")
+	checkErr(err)
+
 	var buffer bytes.Buffer
 	rows, err := db.Query(`SELECT filename, COUNT(checksum_sha256) AS count, SUM(filesize) as totalsize
                             FROM files
@@ -453,7 +473,7 @@ func (db *DB) ListDuplicates() error {
 			if err != nil {
 				return err
 			}
-			buffer.WriteString(fmt.Sprintf("%5v    %8v    %v\n", count, ByteSize(filesize), filename))
+			buffer.WriteString(fmt.Sprintf("%5v    %8v    %v%v\n", count, ByteSize(filesize), basepath, filename))
 		}
 		pager(buffer.String())
 		return nil
@@ -463,6 +483,11 @@ func (db *DB) ListDuplicates() error {
 
 // ShowDeleted returns a list of deleted files, ordered by filesize
 func (db *DB) ShowDeleted() error {
+
+	// get basepath
+	basepath, err := db.GetOption("basepath")
+	checkErr(err)
+
 	var buffer bytes.Buffer
 	rows, err := db.Query(`SELECT filename, filesize, mtime
                             FROM files
@@ -479,7 +504,7 @@ func (db *DB) ShowDeleted() error {
 				return err
 			}
 			formattedDate := time.Unix(int64(date), 0).Format("2006-01-02 15:05:05")
-			buffer.WriteString(fmt.Sprintf("%v    %8v    %v\n", formattedDate, ByteSize(filesize), filename))
+			buffer.WriteString(fmt.Sprintf("%v    %8v    %v%v\n", formattedDate, ByteSize(filesize), basepath, filename))
 		}
 		pager(buffer.String())
 		return nil
@@ -489,6 +514,11 @@ func (db *DB) ShowDeleted() error {
 
 // ShowChanged returns a list of changed files, ordered by filesize
 func (db *DB) ShowChanged() error {
+
+	// get basepath
+	basepath, err := db.GetOption("basepath")
+	checkErr(err)
+
 	var buffer bytes.Buffer
 	rows, err := db.Query(`SELECT filename, filesize
                             FROM files
@@ -503,7 +533,7 @@ func (db *DB) ShowChanged() error {
 			if err != nil {
 				return err
 			}
-			buffer.WriteString(fmt.Sprintf("%8v    %v\n", ByteSize(filesize), filename))
+			buffer.WriteString(fmt.Sprintf("%8v    %v%v\n", ByteSize(filesize), basepath, filename))
 		}
 		pager(buffer.String())
 		return nil
