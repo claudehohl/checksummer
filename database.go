@@ -376,7 +376,7 @@ func (db *DB) Search(term string) error {
 			if err != nil {
 				return err
 			}
-			buffer.WriteString(fmt.Sprintf("%v\t%v\n", ByteSize(filesize), filename))
+			buffer.WriteString(fmt.Sprintf("%8v    %v\n", ByteSize(filesize), filename))
 		}
 		pager(buffer.String(), false)
 		return nil
@@ -400,7 +400,7 @@ func (db *DB) RankFilesize() error {
 			if err != nil {
 				return err
 			}
-			buffer.WriteString(fmt.Sprintf("%v\t%v\n", ByteSize(filesize), filename))
+			buffer.WriteString(fmt.Sprintf("%8v    %v\n", ByteSize(filesize), filename))
 		}
 		pager(buffer.String(), false)
 		return nil
@@ -427,7 +427,7 @@ func (db *DB) RankModified() error {
 			}
 			unixDate := time.Unix(int64(date), 0)
 			// TODO: format date
-			buffer.WriteString(fmt.Sprintf("%v\t%v\t%v\n", unixDate, ByteSize(filesize), filename))
+			buffer.WriteString(fmt.Sprintf("%v    %8v    %v\n", unixDate, ByteSize(filesize), filename))
 		}
 		pager(buffer.String(), false)
 		return nil
@@ -453,7 +453,7 @@ func (db *DB) ListDuplicates() error {
 			if err != nil {
 				return err
 			}
-			buffer.WriteString(fmt.Sprintf("%v\t%v\t%v\n", count, ByteSize(filesize), filename))
+			buffer.WriteString(fmt.Sprintf("%5v    %8v    %v\n", count, ByteSize(filesize), filename))
 		}
 		pager(buffer.String(), false)
 		return nil
@@ -477,7 +477,7 @@ func (db *DB) ShowDeleted() error {
 			if err != nil {
 				return err
 			}
-			buffer.WriteString(fmt.Sprintf("%v\t%v\n", filesize, filename))
+			buffer.WriteString(fmt.Sprintf("%8v    %v\n", filesize, filename))
 		}
 		pager(buffer.String(), false)
 		return nil
@@ -501,7 +501,7 @@ func (db *DB) ShowChanged() error {
 			if err != nil {
 				return err
 			}
-			buffer.WriteString(fmt.Sprintf("%v\t%v\n", filesize, filename))
+			buffer.WriteString(fmt.Sprintf("%8v    %v\n", filesize, filename))
 		}
 		pager(buffer.String(), false)
 		return nil
