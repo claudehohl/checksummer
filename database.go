@@ -264,7 +264,9 @@ func (db *DB) MakeChecksums() {
 	fileCount, err := db.GetCount("SELECT count(id) FROM files WHERE checksum_sha256 IS NULL AND file_found = '1'")
 	checkErr(err)
 	ts, err := db.GetCount("SELECT sum(filesize) FROM files WHERE checksum_sha256 IS NULL AND file_found = '1'")
-	checkErr(err)
+	if err != nil {
+		ts = 0
+	}
 	var totalSize int64
 	totalSize = int64(ts)
 
