@@ -17,6 +17,7 @@ func main() {
 	flag.Parse()
 	database := flag.Arg(0)
 	if database == "" {
+		// TODO: nicer error msg
 		panic("please provide path to checksummer.db!")
 	}
 

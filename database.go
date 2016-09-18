@@ -137,7 +137,7 @@ func (db *DB) RankFilesize() error {
 
 // RankModified returns a list of files, ordered by modified date
 func (db *DB) RankModified() error {
-	var files string
+	var buffer bytes.Buffer
 	rows, err := db.Query(`SELECT filename, filesize, mtime
                             FROM files
                             WHERE file_found = '1'
@@ -152,9 +152,9 @@ func (db *DB) RankModified() error {
 			if err != nil {
 				return err
 			}
-			files = files + fmt.Sprintf("%v\t%v\t%v\n", time.Unix(date, 0), ByteSize(filesize), filename)
+			buffer.WriteString(fmt.Sprintf("%v\t%v\t%v\n", time.Unix(date, 0), ByteSize(filesize), filename))
 		}
-		pager(files, false)
+		pager(buffer.String(), false)
 		return nil
 	}
 	return err
@@ -162,7 +162,7 @@ func (db *DB) RankModified() error {
 
 // ListDuplicates returns a list of duplicate files, ordered by count
 func (db *DB) ListDuplicates() error {
-	var files string
+	var buffer bytes.Buffer
 	rows, err := db.Query(`SELECT filename, COUNT(checksum_sha256) AS count, SUM(filesize) as totalsize
                             FROM files
                             GROUP BY checksum_sha256
@@ -178,9 +178,9 @@ func (db *DB) ListDuplicates() error {
 			if err != nil {
 				return err
 			}
-			files = files + fmt.Sprintf("%v\t%v\t%v\n", count, ByteSize(filesize), filename)
+			buffer.WriteString(fmt.Sprintf("%v\t%v\t%v\n", count, ByteSize(filesize), filename))
 		}
-		pager(files, false)
+		pager(buffer.String(), false)
 		return nil
 	}
 	return err
@@ -188,7 +188,7 @@ func (db *DB) ListDuplicates() error {
 
 // ShowDeleted returns a list of deleted files, ordered by filesize
 func (db *DB) ShowDeleted() error {
-	var files string
+	var buffer bytes.Buffer
 	rows, err := db.Query(`SELECT filename, filesize
                             FROM files
                             WHERE file_found = '0'
@@ -202,9 +202,9 @@ func (db *DB) ShowDeleted() error {
 			if err != nil {
 				return err
 			}
-			files = files + fmt.Sprintf("%v\t%v\n", filesize, filename)
+			buffer.WriteString(fmt.Sprintf("%v\t%v\n", filesize, filename))
 		}
-		pager(files, false)
+		pager(buffer.String(), false)
 		return nil
 	}
 	return err
@@ -212,7 +212,7 @@ func (db *DB) ShowDeleted() error {
 
 // ShowChanged returns a list of changed files, ordered by filesize
 func (db *DB) ShowChanged() error {
-	var files string
+	var buffer bytes.Buffer
 	rows, err := db.Query(`SELECT filename, filesize
                             FROM files
                             WHERE checksum_ok = '0'
@@ -226,9 +226,9 @@ func (db *DB) ShowChanged() error {
 			if err != nil {
 				return err
 			}
-			files = files + fmt.Sprintf("%v\t%v\n", filesize, filename)
+			buffer.WriteString(fmt.Sprintf("%v\t%v\n", filesize, filename))
 		}
-		pager(files, false)
+		pager(buffer.String(), false)
 		return nil
 	}
 	return err
