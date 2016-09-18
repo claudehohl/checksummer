@@ -36,6 +36,8 @@ func main() {
 	checkErr(err)
 	db.Init()
 
+	// TODO: autostrip trailing slash
+	// TODO: prefill old basepath
 	basepath, _ := db.GetOption("basepath")
 	if basepath == "" {
 		db.ChangeBasepath()

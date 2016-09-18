@@ -424,6 +424,7 @@ func (db *DB) RankModified() error {
 				return err
 			}
 			unixDate := time.Unix(int64(date), 0)
+			// TODO: format date
 			buffer.WriteString(fmt.Sprintf("%v\t%v\t%v\n", unixDate, ByteSize(filesize), filename))
 		}
 		pager(buffer.String(), false)
