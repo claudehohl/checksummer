@@ -441,7 +441,7 @@ func (db *DB) RankModified() error {
 			if err != nil {
 				return err
 			}
-			formattedDate := time.Unix(int64(date), 0).Format("2006-01-02 15:05:05")
+			formattedDate := time.Unix(int64(date), 0).Format("2006-01-02 15:04:05")
 			buffer.WriteString(fmt.Sprintf("%v    %8v    %v%v\n", formattedDate, ByteSize(filesize), basepath, filename))
 		}
 		pager(buffer.String())
@@ -503,7 +503,7 @@ func (db *DB) ShowDeleted() error {
 			if err != nil {
 				// ignore, size + date col may be empty when file is not found
 			}
-			formattedDate := time.Unix(int64(date), 0).Format("2006-01-02 15:05:05")
+			formattedDate := time.Unix(int64(date), 0).Format("2006-01-02 15:04:05")
 			buffer.WriteString(fmt.Sprintf("%v    %8v    %v%v\n", formattedDate, ByteSize(filesize), basepath, filename))
 		}
 		pager(buffer.String())
