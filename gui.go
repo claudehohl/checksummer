@@ -59,6 +59,7 @@ func LaunchGUI(db *DB) {
 		fmt.Println("[cd] check files in database")
 		fmt.Println("[mc] make checksums")
 		fmt.Println("[rc] reindex & check all files")
+		fmt.Println("[crc] continue reindex & checking")
 	}
 	fmt.Println("")
 	fmt.Println("=== Analysis ===")
@@ -97,7 +98,9 @@ func LaunchGUI(db *DB) {
 	case "mc":
 		db.MakeChecksums()
 	case "rc":
-		db.ReindexCheck()
+		db.ReindexCheck(false)
+	case "crc":
+		db.ReindexCheck(true)
 	case "r":
 		db.RankFilesize()
 	case "s":

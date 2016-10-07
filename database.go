@@ -558,7 +558,7 @@ func (db *DB) PruneChanged() error {
 }
 
 // ReindexCheck runs over all files and compares checksums
-func (db *DB) ReindexCheck() {
+func (db *DB) ReindexCheck(cont bool) {
 
 	// get basepath
 	basepath, err := db.GetOption("basepath")
@@ -567,15 +567,18 @@ func (db *DB) ReindexCheck() {
 	updateStatement := "UPDATE files SET checksum_ok = ? WHERE id = ?"
 	notFoundStatement := "UPDATE files SET file_found = 0 WHERE id = ?"
 
-	db.CollectFiles()
-	db.CheckFilesDB()
-	db.MakeChecksums()
+	// continue previous reindex-check session? if not, prepare & start from scratch
+	if cont == false {
+		db.CollectFiles()
+		db.CheckFilesDB()
+		db.MakeChecksums()
 
-	// set to check
-	fmt.Printf("preparing to check files...")
-	_, err = db.Exec(`UPDATE files SET checksum_ok = NULL WHERE file_found = '1'`)
-	checkErr(err)
-	fmt.Printf("OK\n")
+		// set to check
+		fmt.Printf("preparing to check files...")
+		_, err = db.Exec(`UPDATE files SET checksum_ok = NULL WHERE file_found = '1'`)
+		checkErr(err)
+		fmt.Printf("OK\n")
+	}
 
 	fileCount, err := db.GetCount("SELECT count(id) FROM files WHERE checksum_ok IS NULL AND file_found = '1'")
 	checkErr(err)
