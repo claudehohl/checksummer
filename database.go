@@ -250,8 +250,10 @@ func (db *DB) CheckFilesDB() {
 			f.Close()
 		}
 
-		stmt.Close()
-		tx.Commit()
+		err = stmt.Close()
+		checkErr(err)
+		err = tx.Commit()
+		checkErr(err)
 	}
 
 	return
@@ -346,15 +348,8 @@ func (db *DB) MakeChecksums() {
 
 		stmtUpdate.Close()
 		stmtNotFound.Close()
-		tx.Commit()
-
-		tx, err = db.Begin()
-		checkErr(err)
-
-		// prepare update statement
-		stmtUpdate, err = tx.Prepare(updateStatement)
-		checkErr(err)
-		stmtNotFound, err = tx.Prepare(notFoundStatement)
+		fmt.Println("Committing...")
+		err = tx.Commit()
 		checkErr(err)
 	}
 
@@ -665,15 +660,8 @@ func (db *DB) ReindexCheck(cont bool) {
 
 		stmtUpdate.Close()
 		stmtNotFound.Close()
-		tx.Commit()
-
-		tx, err = db.Begin()
-		checkErr(err)
-
-		// prepare update statement
-		stmtUpdate, err = tx.Prepare(updateStatement)
-		checkErr(err)
-		stmtNotFound, err = tx.Prepare(notFoundStatement)
+		fmt.Println("Committing...")
+		err = tx.Commit()
 		checkErr(err)
 	}
 
