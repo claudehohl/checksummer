@@ -11,6 +11,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -162,7 +163,7 @@ func (db *DB) CollectFiles() {
 
 		// commit every 10k files
 		if i%10000 == 0 {
-			fmt.Println(i)
+			fmt.Println(thousandsSeparator(i))
 			err = stmt.Close()
 			checkErr(err)
 			err = tx.Commit()
@@ -206,7 +207,7 @@ func (db *DB) CheckFilesDB() {
 	// therefore, we process by fetching blocks of 10000 files
 	for i := 0; i < fileCount; i = i + 10000 {
 		if i >= 10000 {
-			fmt.Println(i)
+			fmt.Println(thousandsSeparator(i))
 		}
 
 		var files []File
@@ -326,7 +327,7 @@ func (db *DB) MakeChecksums() {
 		for _, file := range files {
 			path := basepath + file.Name
 
-			fmt.Printf("(%d, %s) making checksum: %s (%s)... ", remaining, ByteSize(totalSize), path, ByteSize(file.Size))
+			fmt.Printf("(%s, %s) making checksum: %s (%s)... ", thousandsSeparator(remaining), ByteSize(totalSize), path, ByteSize(file.Size))
 
 			f, err := os.Open(path)
 			if err != nil {
@@ -633,7 +634,7 @@ func (db *DB) ReindexCheck(cont bool) {
 		for _, file := range files {
 			path := basepath + file.Name
 
-			fmt.Printf("(%d, %s) checking checksum: %s (%s)... ", remaining, ByteSize(totalSize), path, ByteSize(file.Size))
+			fmt.Printf("(%s, %s) checking checksum: %s (%s)... ", thousandsSeparator(remaining), ByteSize(totalSize), path, ByteSize(file.Size))
 
 			f, err := os.Open(path)
 			if err != nil {
@@ -702,6 +703,29 @@ func (b ByteSize) String() string {
 		return fmt.Sprintf("%.2fKB", b/KB)
 	}
 	return fmt.Sprintf("%.2fB", b)
+}
+
+func thousandsSeparator(number int) string {
+	str := strconv.Itoa(number)
+	str = reverse(str)
+
+	res := ""
+	for i, r := range str {
+		res = res + string(r)
+		if i > 0 && i+1 < len(str) && (i+1)%3 == 0 {
+			res = res + "'"
+		}
+	}
+	res = reverse(res)
+	return res
+}
+
+func reverse(s string) string {
+	r := []rune(s)
+	for i, j := 0, len(r)-1; i < len(r)/2; i, j = i+1, j-1 {
+		r[i], r[j] = r[j], r[i]
+	}
+	return string(r)
 }
 
 // HashFile takes a path and returns a hash
