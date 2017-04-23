@@ -7,7 +7,7 @@ import (
 )
 
 // VERSION sets the version
-const VERSION = "v3.0.0-beta15"
+const VERSION = "v3.0.0"
 
 // File holds the attributes
 type File struct {
