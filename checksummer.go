@@ -7,7 +7,7 @@ import (
 )
 
 // VERSION sets the version
-const VERSION = "v3.0.0"
+const VERSION = "v3.0.1"
 
 // File holds the attributes
 type File struct {
@@ -19,15 +19,19 @@ type File struct {
 }
 
 func main() {
+	flag.Usage = func() {
+		out := flag.CommandLine.Output()
+		fmt.Fprintln(out, "Checksummer version", VERSION)
+		fmt.Fprintln(out, "")
+		fmt.Fprintln(out, "Usage:   ./checksummer sqlite3.db [search arguments]")
+		fmt.Fprintln(out, "")
+		fmt.Fprintln(out, "Example: ./checksummer myfiles.db")
+		fmt.Fprintln(out, "")
+	}
 	flag.Parse()
 	database := flag.Arg(0)
 	if database == "" {
-		fmt.Println("Checksummer version", VERSION)
-		fmt.Println("")
-		fmt.Println("Usage:   ./checksummer sqlite3.db [search arguments]")
-		fmt.Println("")
-		fmt.Println("Example: ./checksummer myfiles.db")
-		fmt.Println("")
+		flag.Usage()
 		os.Exit(1)
 	}
 
