@@ -162,10 +162,14 @@ func (db *DB) CollectFiles() {
 		}
 		i++
 
+		// show progress every 10k files
+		if i%10000 == 0 {
+			fmt.Println(thousandsSeparator(i))
+		}
+
 		// commit every minute
 		if time.Since(lastCommit) >= time.Minute {
 			lastCommit = time.Now()
-			fmt.Println(thousandsSeparator(i))
 			err = stmt.Close()
 			checkErr(err)
 			err = tx.Commit()
