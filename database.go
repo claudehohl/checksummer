@@ -138,6 +138,7 @@ func (db *DB) CollectFiles() {
 	checkErr(err)
 
 	i := 0
+	lastCommit := time.Now()
 	err = filepath.Walk(basepath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			fmt.Println(err)
@@ -161,8 +162,9 @@ func (db *DB) CollectFiles() {
 		}
 		i++
 
-		// commit every 10k files
-		if i%10000 == 0 {
+		// commit every minute
+		if time.Since(lastCommit) >= time.Minute {
+			lastCommit = time.Now()
 			fmt.Println(thousandsSeparator(i))
 			err = stmt.Close()
 			checkErr(err)
@@ -283,29 +285,42 @@ func (db *DB) MakeChecksums() {
 	var totalSize int64
 	totalSize = int64(ts)
 
-	// dynamically calculate blocksize.
-	// lots of small files = large blocksize (10000)
-	// huge, few files = small blocksize (100)
-	// this is relevant because the commit happens after each block
-	fileSizePerCount := float32(totalSize) / float32(fileCount)
-	bs := 10000.0 / fileSizePerCount * 50000
-	blockSize := int(bs)
+	// files are fetched in blocks: sqlite dies with "unable to open
+	// database [14]" when a SELECT is still open while we UPDATE.
+	// all blocks run inside the same transaction, so a new block doesn't
+	// see files that are already done but not yet committed.
+	const blockSize = 1000
 
-	// sqlite dies with "unable to open database [14]" when I run two stmts concurrently
-	// therefore, we process by fetching blocks of files
-	for i := fileCount + blockSize; i > 0; i = i - blockSize {
-		var (
-			tx           *sql.Tx
-			stmtUpdate   *sql.Stmt
-			stmtNotFound *sql.Stmt
-			files        []File
-			rows         *sql.Rows
-		)
+	var (
+		tx           *sql.Tx
+		stmtUpdate   *sql.Stmt
+		stmtNotFound *sql.Stmt
+	)
 
-		rows, err = db.Query("SELECT id, filename, filesize FROM files WHERE checksum_sha256 IS NULL AND file_found = '1' LIMIT ?", blockSize)
-		defer rows.Close()
+	begin := func() {
+		tx, err = db.Begin()
 		checkErr(err)
+		stmtUpdate, err = tx.Prepare(updateStatement)
+		checkErr(err)
+		stmtNotFound, err = tx.Prepare(notFoundStatement)
+		checkErr(err)
+	}
+	commit := func() {
+		stmtUpdate.Close()
+		stmtNotFound.Close()
+		fmt.Println("Committing...")
+		err = tx.Commit()
+		checkErr(err)
+	}
 
+	begin()
+	lastCommit := time.Now()
+
+	for {
+		var files []File
+
+		rows, err := tx.Query("SELECT id, filename, filesize FROM files WHERE checksum_sha256 IS NULL AND file_found = '1' LIMIT ?", blockSize)
+		checkErr(err)
 		for rows.Next() {
 			var id int64
 			var filename string
@@ -315,14 +330,9 @@ func (db *DB) MakeChecksums() {
 		}
 		rows.Close()
 
-		tx, err = db.Begin()
-		checkErr(err)
-
-		// prepare update statement
-		stmtUpdate, err = tx.Prepare(updateStatement)
-		checkErr(err)
-		stmtNotFound, err = tx.Prepare(notFoundStatement)
-		checkErr(err)
+		if len(files) == 0 {
+			break
+		}
 
 		for _, file := range files {
 			path := basepath + file.Name
@@ -345,14 +355,18 @@ func (db *DB) MakeChecksums() {
 			fmt.Println("OK")
 			remaining--
 			totalSize = totalSize - file.Size
-		}
 
-		stmtUpdate.Close()
-		stmtNotFound.Close()
-		fmt.Println("Committing...")
-		err = tx.Commit()
-		checkErr(err)
+			// commit every minute
+			if time.Since(lastCommit) >= time.Minute {
+				commit()
+				begin()
+				lastCommit = time.Now()
+			}
+		}
 	}
+
+	// final commit
+	commit()
 
 	return
 }
