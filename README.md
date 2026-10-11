@@ -11,7 +11,11 @@ checksummer creates a checksum of EVERY file and saves it into a sqlite3 db. You
 
 ## Installation
 
-`go get github.com/claudehohl/checksummer`
+Requires Go and a C compiler (gcc), since go-sqlite3 uses cgo.
+
+`go install github.com/claudehohl/checksummer@latest`
+
+Versions before v1.3.1 were numbered up to v3.0.0.
 
 ## Bonus features
 
